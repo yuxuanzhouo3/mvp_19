@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -131,12 +132,22 @@ export default function HomePage() {
 
   const t = content[lang]
 
-  const optionalModules = [
-    { icon: Zap, name: lang === "en" ? "AI Coder Studio" : "AI 编码工作室" },
-    { icon: Users, name: lang === "en" ? "AI Hiring System" : "AI 招聘系统" },
-    { icon: Building2, name: lang === "en" ? "Accounting & Legal Hub" : "财务法务中心" },
-    { icon: Target, name: lang === "en" ? "Price Comparison Engine" : "价格对比引擎" },
+  const productLinks = [
+    { icon: Zap, name: "sitehub", cn: "https://site.mornscience.top/", intl: "https://www.mornhub.help/" },
+    { icon: Users, name: "personalink", cn: "https://personalink.mornscience.top", intl: "https://www.mornhub.lat" },
+    { icon: Building2, name: "mornspeaker", cn: "https://mornspeaker.mornscience.top/", intl: "https://www.mornscience.onl/" },
+    { icon: Target, name: "mornclient", cn: "https://mornclient.mornscience.top/", intl: "https://www.mornscience.biz" },
+    { icon: TrendingUp, name: "morncoach", cn: "http://morncoach.mornscience.top", intl: "https://mornhub.biz" },
+    { icon: Globe, name: "morntool", cn: "http://morntool.mornscience.top", intl: "https://www.mornhub.lol/" },
+    { icon: Network, name: "mornfront", cn: "https://mornfront.mornscience.top/", intl: "https://www.mornscience.dev/" },
+    { icon: Sparkles, name: "multigpt", cn: "https://multigpt.mornscience.top/", intl: "https://morn.work/" },
+    { icon: DollarSign, name: "OrbitChat", cn: "https://orbital.mornscience.top/", intl: "http://mornscience.work/" },
+    { icon: Moon, name: "mornxyz", cn: "https://mornxyz.mornscience.top/", intl: "https://www.mornhub.xyz/" },
+    { icon: Sun, name: "morngpt", cn: "https://morngpt.mornscience.top/", intl: "https://www.morn.work/" },
+    { icon: ArrowRight, name: "mornfake", cn: "https://mornfake.mornscience.top", intl: "https://www.mornhub.pics" },
+    { icon: Users, name: "mornhome", cn: "https://mornhome.mornscience.top", intl: "https://mornhub.homes/" },
   ]
+  const isCnRegion = lang === "zh"
 
   return (
     <div className={isDark ? "dark" : ""}>
@@ -173,8 +184,8 @@ export default function HomePage() {
               <Button variant="ghost" size="icon" onClick={toggleTheme}>
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </Button>
-              <Button variant="outline" size="sm">
-                {lang === "en" ? "Log in" : "登录"}
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/login">{lang === "en" ? "Log in" : "登录"}</Link>
               </Button>
             </div>
           </div>
@@ -201,12 +212,14 @@ export default function HomePage() {
               </p>
 
               <div className="flex items-center justify-center gap-4 pt-4">
-                <Button size="lg" className="gap-2">
-                  {t.hero.cta1}
-                  <ArrowRight className="w-4 h-4" />
+                <Button size="lg" className="gap-2" asChild>
+                  <Link href="/launch">
+                    {t.hero.cta1}
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </Button>
-                <Button size="lg" variant="outline">
-                  {t.hero.cta2}
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/demo">{t.hero.cta2}</Link>
                 </Button>
               </div>
             </div>
@@ -243,9 +256,11 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <Button variant="outline" className="w-full bg-transparent">
-                  {lang === "en" ? "Explore" : "了解更多"}
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                <Button variant="outline" className="w-full bg-transparent" asChild>
+                  <Link href="/demo">
+                    {lang === "en" ? "Explore" : "了解更多"}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
                 </Button>
               </Card>
 
@@ -270,9 +285,11 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <Button variant="outline" className="w-full bg-transparent">
-                  {lang === "en" ? "Explore" : "了解更多"}
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                <Button variant="outline" className="w-full bg-transparent" asChild>
+                  <Link href="/demo">
+                    {lang === "en" ? "Explore" : "了解更多"}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
                 </Button>
               </Card>
 
@@ -299,9 +316,11 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <Button variant="outline" className="w-full bg-transparent">
-                  {lang === "en" ? "Explore" : "了解更多"}
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                <Button variant="outline" className="w-full bg-transparent" asChild>
+                  <Link href="/demo">
+                    {lang === "en" ? "Explore" : "了解更多"}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
                 </Button>
               </Card>
             </div>
@@ -317,17 +336,21 @@ export default function HomePage() {
             </div>
 
             <div className="grid md:grid-cols-4 gap-4">
-              {optionalModules.map((module, i) => {
-                const Icon = module.icon
+              {productLinks.slice(0, 8).map((product, i) => {
+                const Icon = product.icon
+                const href = isCnRegion ? product.cn : product.intl
                 return (
-                  <Card key={i} className="p-6 hover:border-primary transition-colors cursor-pointer">
-                    <div className="space-y-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-primary" />
+                  <a key={i} href={href} target="_blank" rel="noreferrer" className="block">
+                    <Card className="p-6 hover:border-primary transition-colors cursor-pointer h-full">
+                      <div className="space-y-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                          <Icon className="w-5 h-5 text-primary" />
+                        </div>
+                        <p className="font-medium">{product.name}</p>
+                        <p className="text-xs text-muted-foreground">{isCnRegion ? "CN" : "INTL"}</p>
                       </div>
-                      <p className="font-medium">{module.name}</p>
-                    </div>
-                  </Card>
+                    </Card>
+                  </a>
                 )
               })}
             </div>
@@ -335,7 +358,7 @@ export default function HomePage() {
         </section>
 
         {/* Architecture Section */}
-        <section className="py-20 px-4 bg-muted/30">
+        <section id="architecture" className="py-20 px-4 bg-muted/30">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center space-y-4 mb-12">
               <h2 className="text-4xl font-bold">
@@ -348,41 +371,38 @@ export default function HomePage() {
 
             <div className="relative">
               <div className="grid md:grid-cols-5 gap-4">
-                {[
-                  {
-                    name: lang === "en" ? "Business OS Core" : "商业操作系统核心",
-                    color: "from-blue-500 to-purple-500",
-                  },
-                  { name: lang === "en" ? "Growth Engine" : "增长引擎", color: "from-purple-500 to-pink-500" },
-                  { name: lang === "en" ? "Capital Engine" : "资本引擎", color: "from-green-500 to-emerald-500" },
-                  { name: lang === "en" ? "Content Engine" : "内容引擎", color: "from-cyan-500 to-blue-500" },
-                  { name: lang === "en" ? "Enterprise Engine" : "企业引擎", color: "from-orange-500 to-red-500" },
-                ].map((engine, i) => (
-                  <Card key={i} className="p-6 text-center space-y-3 hover:scale-105 transition-transform">
-                    <div
-                      className={`w-full h-24 bg-gradient-to-br ${engine.color} rounded-lg flex items-center justify-center`}
-                    >
-                      <Network className="w-8 h-8 text-white" />
-                    </div>
-                    <p className="font-medium text-sm">{engine.name}</p>
-                  </Card>
-                ))}
+                {productLinks.slice(8).map((product, i) => {
+                  const href = isCnRegion ? product.cn : product.intl
+                  return (
+                    <a key={i} href={href} target="_blank" rel="noreferrer" className="block">
+                      <Card className="p-6 text-center space-y-3 hover:scale-105 transition-transform h-full">
+                        <div className="w-full h-24 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                          <Network className="w-8 h-8 text-white" />
+                        </div>
+                        <p className="font-medium text-sm">{product.name}</p>
+                        <p className="text-xs text-muted-foreground">{isCnRegion ? "CN" : "INTL"}</p>
+                      </Card>
+                    </a>
+                  )
+                })}
               </div>
             </div>
           </div>
         </section>
 
         {/* CTA Section */}
-        <section className="py-32 px-4">
+        <section id="cta" className="py-32 px-4">
           <div className="container mx-auto max-w-4xl text-center space-y-8">
             <h2 className="text-5xl font-bold text-balance">{t.cta.title}</h2>
             <div className="flex items-center justify-center gap-4">
-              <Button size="lg" className="gap-2">
-                {t.cta.button}
-                <ArrowRight className="w-4 h-4" />
+              <Button size="lg" className="gap-2" asChild>
+                <Link href="/launch">
+                  {t.cta.button}
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </Button>
-              <Button size="lg" variant="outline">
-                {lang === "en" ? "Connect Capital" : "对接资本"}
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/connect-capital">{lang === "en" ? "Connect Capital" : "对接资本"}</Link>
               </Button>
             </div>
           </div>
