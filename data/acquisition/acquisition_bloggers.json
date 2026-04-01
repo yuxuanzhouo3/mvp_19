@@ -1,0 +1,51 @@
+[
+  {
+    "id": "bl-b6297bd0",
+    "userId": "91ff7085-4d9a-4c51-b099-125257d012c6",
+    "name": "xx",
+    "platform": "小红书",
+    "followers": "1000k",
+    "email": "1171037136@qq.com",
+    "status": "未联系",
+    "commission": "30%",
+    "cost": "500",
+    "created_at": "2026-03-30T11:30:06.528Z",
+    "updated_at": "2026-03-30T11:30:06.528Z"
+  },
+  {
+    "id": "bl-003",
+    "name": "AI工具猎手",
+    "platform": "抖音",
+    "followers": "120k",
+    "email": "hunter@126.com",
+    "status": "已发邮件",
+    "commission": "20%",
+    "cost": "未知",
+    "created_at": "2026-03-30T05:24:53.262Z",
+    "updated_at": "2026-03-30T05:24:53.262Z"
+  },
+  {
+    "id": "bl-002",
+    "name": "设计日常",
+    "platform": "小红书",
+    "followers": "42k",
+    "email": "hello@qq.com",
+    "status": "谈判中",
+    "commission": "25%",
+    "cost": "¥100/图文",
+    "created_at": "2026-03-30T05:24:52.944Z",
+    "updated_at": "2026-03-30T05:24:52.944Z"
+  },
+  {
+    "id": "bl-001",
+    "name": "科技评测_老马",
+    "platform": "B站",
+    "followers": "185k",
+    "email": "laoma@163.com",
+    "status": "已签约",
+    "commission": "30%",
+    "cost": "¥200/视频",
+    "created_at": "2026-03-30T05:24:52.731Z",
+    "updated_at": "2026-03-30T05:24:52.731Z"
+  }
+]

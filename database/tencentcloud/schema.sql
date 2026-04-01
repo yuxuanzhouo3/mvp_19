@@ -44,3 +44,26 @@ create table if not exists admin_audit_logs (
   key idx_admin_audit_logs_created_at (created_at)
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_0900_ai_ci comment='管理员操作审计日志';
 
+-- ---------------------------------------------------------
+-- 3) 资金流水表：记录所有用户资金变动
+-- ---------------------------------------------------------
+create table if not exists user_transactions (
+  id bigint unsigned not null auto_increment comment '主键ID，自增',
+  userId varchar(255) not null comment '用户ID',
+  type varchar(32) not null comment '类型：reward/recharge/withdraw/charge/refund',
+  amount decimal(12,2) not null comment '变动金额（可正可负）',
+  balance decimal(12,2) not null comment '变动后最新余额',
+  orderId varchar(255) null comment '关联订单/广告ID/任务ID',
+  status varchar(32) not null default 'success' comment '状态：success/processing/failed',
+  remark varchar(500) null comment '备注',
+  created_at datetime not null default current_timestamp comment '创建时间',
+  updated_at datetime not null default current_timestamp on update current_timestamp comment '更新时间',
+  primary key (id),
+  key idx_user_transactions_userid (userId),
+  key idx_user_transactions_type (type),
+  key idx_user_transactions_created_at (created_at),
+  key idx_user_transactions_orderid (orderId),
+  constraint chk_transaction_type check (type in ('reward', 'recharge', 'withdraw', 'charge', 'refund')),
+  constraint chk_transaction_status check (status in ('success', 'processing', 'failed'))
+) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_0900_ai_ci comment='用户资金流水表';
+
