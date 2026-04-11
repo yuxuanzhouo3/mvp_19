@@ -62,6 +62,18 @@ export async function POST(req: NextRequest) {
     expiresAt.setMonth(expiresAt.getMonth() + plan.months)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
+    // ── 微信支付（国内）──────────────────────────────────
+    if (paymentMethod === "wechat_pay") {
+      const res = await fetch(`${baseUrl}/api/payment/wechat/create-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", cookie: `market_user_id=${userId}` },
+        body: JSON.stringify({ amount: finalPrice, planId, planName: plan.name }),
+      })
+      const data = await res.json()
+      if (!data.ok) throw new Error(data.message || "创建微信支付订单失败")
+      return NextResponse.json({ ok: true, type: "wechat", codeUrl: data.codeUrl, outTradeNo: data.outTradeNo })
+    }
+
     // ── Stripe ──────────────────────────────────────────
     if (paymentMethod === "stripe") {
       const Stripe = (await import("stripe")).default
