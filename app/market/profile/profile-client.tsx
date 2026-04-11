@@ -8,11 +8,13 @@ import {
   PlaySquare, Users, Building2, CreditCard, PlusCircle,
   Settings, Bell, MessageSquare, Info, LogOut, BarChart3,
   Award, Shield, Download, Cpu, Key, Eye, EyeOff, Sparkles,
-  TrendingUp, Star
+  TrendingUp, Star, Zap
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LoginPrompt } from "@/components/market/login-prompt"
 import type { UserMarketProfile } from "@/lib/market/acquisition-types"
+import { t } from "@/lib/market/i18n"
+const isIntl = (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() !== "cn"
 
 export function ProfileClient() {
   const router = useRouter()
@@ -31,6 +33,8 @@ export function ProfileClient() {
   const [walletAccount, setWalletAccount] = useState("")
   const [walletLoading, setWalletLoading] = useState(false)
   const [walletMsg, setWalletMsg] = useState("")
+  // 国际版支付方式
+  const isIntl = (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() !== "cn"
 
   const fetchProfile = useCallback(async () => {
     setLoading(true)
@@ -115,6 +119,22 @@ export function ProfileClient() {
     setWalletLoading(true)
     setWalletMsg("")
     try {
+      if (walletModal === "recharge" && isIntl) {
+        // 国际版：跳转 Stripe Checkout
+        const res = await fetch("/api/payment/stripe/checkout", {
+          method: "POST", credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: parseFloat(walletAmount) }),
+        })
+        const json = await res.json()
+        if (json.ok && json.url) {
+          window.location.href = json.url
+          return
+        }
+        setWalletMsg(`❌ ${json.message || "创建支付失败"}`)
+        return
+      }
+
       const url = walletModal === "recharge" ? "/api/wallet/recharge" : "/api/wallet/withdraw"
       const body: any = { amount: walletAmount }
       if (walletModal === "withdraw") body.accountInfo = walletAccount
@@ -164,25 +184,19 @@ export function ProfileClient() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-white/30 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors group"
-          >
+          <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors group">
             <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-            返回
+            {t("back")}
           </button>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-lg flex items-center justify-center">
               <Sparkles size={12} className="text-white" />
             </div>
-            <span className="font-semibold text-slate-800 text-sm">个人中心</span>
+            <span className="font-semibold text-slate-800 text-sm">{t("profile_title")}</span>
           </div>
-          <button
-            onClick={() => router.push("/market/profile/edit")}
-            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors"
-          >
+          <button onClick={() => router.push("/market/profile/edit")} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
             <Settings size={16} />
-            编辑
+            {t("edit")}
           </button>
         </div>
       </header>
@@ -228,7 +242,7 @@ export function ProfileClient() {
                   : "bg-slate-100 text-slate-500 border border-slate-200"
               }`}>
                 {isInfluencer ? <Star size={9} className="fill-current" /> : null}
-                {isInfluencer ? (profile?.isRealInfluencer ? "金牌达人" : "已认证达人") : "达人未认证"}
+                {isInfluencer ? (profile?.isRealInfluencer ? t("top_influencer") : t("certified_influencer")) : t("uncertified_influencer")}
               </span>
               <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium ${
                 isMerchant
@@ -236,7 +250,7 @@ export function ProfileClient() {
                   : "bg-slate-100 text-slate-500 border border-slate-200"
               }`}>
                 {isMerchant ? <Star size={9} className="fill-current" /> : null}
-                {isMerchant ? (profile?.isRealMerchant ? "金牌商家" : "已认证商家") : "商家未认证"}
+                {isMerchant ? (profile?.isRealMerchant ? t("top_merchant") : t("certified_merchant")) : t("uncertified_merchant")}
               </span>
             </div>
           </div>
@@ -257,19 +271,19 @@ export function ProfileClient() {
             <div className="relative z-10 h-full flex flex-col justify-between">
               <div className="flex items-center gap-2 mb-4">
                 <Wallet size={15} className="text-white/60" />
-                <span className="text-white/60 text-xs font-medium">我的钱包</span>
+                <span className="text-white/60 text-xs font-medium">{t("my_wallet")}</span>
               </div>
 
               <div className="flex justify-between items-end mb-6">
                 <div>
-                  <p className="text-white/50 text-xs mb-1">账户余额</p>
+                  <p className="text-white/50 text-xs mb-1">{t("account_balance")}</p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-white/70 text-lg font-medium">¥</span>
                     <span className="text-white text-4xl font-bold tracking-tight">{profile?.balance || "0.00"}</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-white/50 text-xs mb-1">累计收入</p>
+                  <p className="text-white/50 text-xs mb-1">{t("total_earnings")}</p>
                   <div className="flex items-center gap-1 justify-end">
                     <TrendingUp size={14} className="text-green-300" />
                     <span className="text-white/90 text-xl font-semibold">¥ {profile?.totalEarnings || "0.00"}</span>
@@ -282,13 +296,19 @@ export function ProfileClient() {
                   onClick={() => openWallet("recharge")}
                   className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-sm font-medium transition-all hover:-translate-y-0.5"
                 >
-                  <PlusCircle size={15} /> 充值
+                  <PlusCircle size={15} /> {t("recharge")}
+                </button>
+                <button
+                  onClick={() => router.push("/market/membership")}
+                  className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-sm font-medium transition-all hover:-translate-y-0.5"
+                >
+                  <Zap size={15} /> {t("ai_recharge")}
                 </button>
                 <button
                   onClick={() => openWallet("withdraw")}
                   className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-white text-indigo-700 hover:bg-white/90 text-sm font-semibold transition-all hover:-translate-y-0.5 shadow-lg"
                 >
-                  <CreditCard size={15} /> 提现
+                  <CreditCard size={15} /> {t("withdraw")}
                 </button>
               </div>
             </div>
@@ -299,84 +319,42 @@ export function ProfileClient() {
         <div className="grid md:grid-cols-2 gap-4 mb-4">
 
           {/* My Business */}
-          <GlassSection title="我的业务" icon={<PlaySquare size={14} />}>
-            <NavItem
-              href="/market/my-tasks"
-              icon={<PlaySquare size={16} />}
-              iconColor="text-blue-600"
-              iconBg="bg-blue-50"
-              label="我的任务"
-              sub={`已完成 ${profile?.adViewsCount || 0} 个任务`}
-            />
-            <NavItem
-              href="/market/acquisition?mode=influencer"
-              icon={<Users size={16} />}
-              iconColor="text-orange-500"
-              iconBg="bg-orange-50"
-              label="我的合作"
-              sub="博主对接与分成收入"
-            />
-            <NavItem
-              href="/market/acquisition?mode=merchant"
-              icon={<Building2 size={16} />}
-              iconColor="text-purple-600"
-              iconBg="bg-purple-50"
-              label="投放 & 线索"
-              sub="广告、B2B、VC对接"
-              last
-            />
+          <GlassSection title={t("my_business")} icon={<PlaySquare size={14} />}>
+            <NavItem href="/market/invite" icon={<Users size={16} />} iconColor="text-emerald-600" iconBg="bg-emerald-50"
+              label={isIntl ? "Invite Friends" : "邀请好友"} sub={isIntl ? "Share & earn discount codes" : "分享链接，获得折扣码奖励"} />
+            <NavItem href="/market/invite" icon={<Users size={16} />} iconColor="text-blue-600" iconBg="bg-blue-50"
+              label={t("my_tasks")} sub={t("tasks_completed", { n: profile?.adViewsCount || 0 })} />
+            <NavItem href="/market/my-tasks" icon={<PlaySquare size={16} />} iconColor="text-orange-500" iconBg="bg-orange-50"
+              label={t("my_cooperation")} sub={t("cooperation_sub")} />
+            <NavItem href="/market/acquisition?mode=merchant" icon={<Building2 size={16} />} iconColor="text-purple-600" iconBg="bg-purple-50"
+              label={t("ad_leads")} sub={t("ad_leads_sub")} last />
           </GlassSection>
 
-          {/* Account Center */}
-          <GlassSection title="账户中心" icon={<Shield size={14} />}>
-            <NavItem
-              href="/market/transactions"
-              icon={<BarChart3 size={16} />}
-              iconColor="text-blue-600"
-              iconBg="bg-blue-50"
-              label="账单明细"
-              sub="查看收支流水"
-            />
-            <NavItem
-              icon={<Shield size={16} />}
-              iconColor="text-indigo-600"
-              iconBg="bg-indigo-50"
-              label="身份认证中心"
-              sub="实名 / 达人 / 商家认证"
-            />
-            <NavItem
-              icon={<Award size={16} />}
-              iconColor="text-purple-600"
-              iconBg="bg-purple-50"
-              label="达人等级与权益"
-              sub="查看等级与专属权益"
-              last
-            />
+          <GlassSection title={t("account_center")} icon={<Shield size={14} />}>
+            <NavItem href="/market/transactions" icon={<BarChart3 size={16} />} iconColor="text-blue-600" iconBg="bg-blue-50"
+              label={t("bill_detail")} sub={t("bill_sub")} />
+            <NavItem href="/market/acquisition?mode=task" icon={<Shield size={16} />} iconColor="text-indigo-600" iconBg="bg-indigo-50"
+              label={t("identity_verify")} sub={t("identity_sub")} />
+            <NavItem icon={<Award size={16} />} iconColor="text-purple-600" iconBg="bg-purple-50"
+              label={t("influencer_level")} sub={t("influencer_level_sub")} last />
           </GlassSection>
         </div>
 
         {/* ── Settings (full width) ── */}
-        <GlassSection title="更多设置" icon={<Settings size={14} />} className="mb-4">
+        <GlassSection title={t("more_settings")} icon={<Settings size={14} />} className="mb-4">
           <div className="grid sm:grid-cols-2">
             <Link href="/market/profile/edit">
-              <NavItem icon={<User size={16} />} iconColor="text-slate-600" iconBg="bg-slate-100" label="编辑资料" sub="修改昵称、头像等" />
+              <NavItem icon={<User size={16} />} iconColor="text-slate-600" iconBg="bg-slate-100" label={t("edit_profile")} sub={t("edit_profile_sub")} />
             </Link>
             <div onClick={handleGetPassword}>
-              <NavItem icon={<Key size={16} />} iconColor="text-slate-600" iconBg="bg-slate-100" label="查看密码" sub="查看当前登录密码" />
+              <NavItem icon={<Key size={16} />} iconColor="text-slate-600" iconBg="bg-slate-100" label={t("view_password")} sub={t("view_password_sub")} />
             </div>
-            <NavItem icon={<Bell size={16} />} iconColor="text-slate-600" iconBg="bg-slate-100" label="消息通知" sub="推送与提醒设置" />
-            <NavItem icon={<MessageSquare size={16} />} iconColor="text-slate-600" iconBg="bg-slate-100" label="客服与反馈" sub="联系我们" />
-            <NavItem icon={<Info size={16} />} iconColor="text-slate-600" iconBg="bg-slate-100" label="关于我们" sub="版本 v1.2.4" last />
+            <NavItem icon={<Bell size={16} />} iconColor="text-slate-600" iconBg="bg-slate-100" label={t("notifications")} sub={t("notifications_sub")} />
+            <NavItem icon={<MessageSquare size={16} />} iconColor="text-slate-600" iconBg="bg-slate-100" label={t("support")} sub={t("support_sub")} />
+            <NavItem icon={<Info size={16} />} iconColor="text-slate-600" iconBg="bg-slate-100" label={t("about")} sub="v1.2.4" last />
             <div onClick={handleLogout} className="sm:col-start-2">
-              <NavItem
-                icon={<LogOut size={16} />}
-                iconColor="text-red-500"
-                iconBg="bg-red-50"
-                label="退出登录"
-                sub="安全退出当前账号"
-                labelClass="text-red-500"
-                last
-              />
+              <NavItem icon={<LogOut size={16} />} iconColor="text-red-500" iconBg="bg-red-50"
+                label={t("logout")} sub={t("logout_sub")} labelClass="text-red-500" last />
             </div>
           </div>
         </GlassSection>

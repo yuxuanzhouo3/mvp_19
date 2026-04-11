@@ -7,8 +7,9 @@
  */
 
 // ── 判断当前区域 ──────────────────────────────────────
-function isCN(): boolean {
-  return (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() === "cn"
+export function isCN(): boolean {
+  const region = process.env.NEXT_PUBLIC_SITE_REGION || process.env.SITE_REGION || "intl"
+  return region.toLowerCase() === "cn"
 }
 
 function nowIso() {
@@ -104,38 +105,147 @@ function getSupabase(): SupabaseClient {
 }
 
 // Supabase CRUD
+// 驼峰转下划线：userId → user_id, fullName → full_name
+function camelToSnake(str: string): string {
+  return str.replace(/([A-Z])/g, '_$1').toLowerCase();
+}
+
+// 写入时将驼峰命名转换为下划线命名（Supabase 表列名为 snake_case）
+function normalizeFilters(filters: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [k, v] of Object.entries(filters)) {
+    const snakeKey = camelToSnake(k);
+    result[snakeKey] = v;
+  }
+  return result;
+}
+
+// 小写转驼峰：isinfluencerverified → isInfluencerVerified, user_id → userId
+function toCamelCase(str: string): string {
+  // 已经是驼峰或含大写则不处理
+  if (/[A-Z]/.test(str)) return str
+  
+  // 处理带下划线的情况：user_id → userId
+  if (str.includes('_')) {
+    return str.split('_').map((word, index) => {
+      if (index === 0) return word
+      return word.charAt(0).toUpperCase() + word.slice(1)
+    }).join('')
+  }
+  
+  // 纯小写且无下划线：尝试从已知驼峰映射还原
+  return CAMEL_MAP[str] ?? str
+}
+
+// 已知的驼峰字段映射表（小写 → 驼峰）
+const CAMEL_MAP: Record<string, string> = {
+  userid: "userId",
+  user_id: "userId",
+  isrealnnameverified: "isRealNameVerified",
+  isrealnameverified: "isRealNameVerified",
+  isinfluencerverified: "isInfluencerVerified",
+  ismerchantverified: "isMerchantVerified",
+  isrealinfluencer: "isRealInfluencer",
+  isrealmerchant: "isRealMerchant",
+  adviewscount: "adViewsCount",
+  totalearnings: "totalEarnings",
+  platformaccount: "platformAccount",
+  platformhomeurl: "platformHomeUrl",
+  companyname: "companyName",
+  creditcode: "creditCode",
+  businesslicenseurl: "businessLicenseUrl",
+  brandname: "brandName",
+  contactperson: "contactPerson",
+  contactphone: "contactPhone",
+  fullname: "fullName",
+  idnumber: "idNumber",
+  createdat: "createdAt",
+  updatedat: "updatedAt",
+  created_at: "created_at",  // 保留下划线格式
+  updated_at: "updated_at",
+  googleid: "googleId",
+  wechatid: "wechatId",
+  leadownerid: "leadOwnerId",
+  applicantid: "applicantId",
+  applicantname: "applicantName",
+  applicantcontact: "applicantContact",
+  applicantemail: "applicantEmail",
+  applicantvisible: "applicantVisible",
+  leadtype: "leadType",
+  leadid: "leadId",
+  cooperationcount: "cooperationCount",
+  publishat: "publishAt",
+  ispublic: "isPublic",
+  estvalue: "estValue",  // 注意：数据库存的是 est_value
+  fundingamount: "fundingAmount",
+  fundingstage: "fundingStage",
+  fromapplicationid: "fromApplicationId",
+  rewardearned: "rewardEarned",
+  completedat: "completedAt",
+  orderid: "orderId",
+  videurl: "videoUrl",
+  videourl: "videoUrl",
+  adviewcount: "adViewsCount",
+}
+
+function restoreCamelCase(row: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {}
+  for (const [k, v] of Object.entries(row)) {
+    result[toCamelCase(k)] = v
+  }
+  return result
+}
+
+function restoreRows(rows: any[]): any[] {
+  return rows.map(r => restoreCamelCase(r))
+}
+
 const sbAdapter = {
   async loadRows(table: string, filters: Record<string, any> = {}): Promise<any[]> {
     const sb = getSupabase()
+    const normalized = normalizeFilters(filters)
     let query = sb.from(table).select("*")
-    for (const [k, v] of Object.entries(filters)) {
+    for (const [k, v] of Object.entries(normalized)) {
       if (v === undefined || v === null) continue
       query = query.eq(k, v)
     }
+    // 无 filter 时加 neq 避免 PostgREST 空查询问题
+    const hasFilters = Object.keys(normalized).length > 0
+    if (!hasFilters) {
+      query = (query as any).gt("id", "")
+    }
     const { data, error } = await query
     if (error) {
-      // 表不存在时返回空数组
       if (error.code === "42P01") return []
       throw new Error(`[Supabase] loadRows ${table}: ${error.message}`)
     }
-    return data || []
+    return restoreRows(data || [])
   },
 
   async insertRow(table: string, row: Record<string, any>): Promise<any> {
     const sb = getSupabase()
     const now = nowIso()
-    const finalRow = { ...row, created_at: now, updated_at: now }
+    const { randomUUID } = await import("crypto")
+    // 列名统一转下划线
+    const normalizedRow = normalizeFilters(row)
+    const finalRow = {
+      id: randomUUID(),
+      ...normalizedRow,
+      created_at: now,
+      updated_at: now,
+    }
+    console.log(`[Supabase] insertRow ${table}`, JSON.stringify(finalRow).slice(0, 200))
     const { data, error } = await sb.from(table).insert(finalRow).select().single()
     if (error) throw new Error(`[Supabase] insertRow ${table}: ${error.message}`)
-    return data
+    return restoreCamelCase(data)
   },
 
   async updateRow(table: string, filters: Record<string, any>, patch: Record<string, any>): Promise<any | null> {
     const sb = getSupabase()
-    const finalPatch = { ...patch, updated_at: nowIso() }
-    // 先查找记录
+    const normalizedFilters = normalizeFilters(filters)
+    const normalizedPatch = { ...normalizeFilters(patch), updated_at: nowIso() }
     let query = sb.from(table).select("*")
-    for (const [k, v] of Object.entries(filters)) {
+    for (const [k, v] of Object.entries(normalizedFilters)) {
       if (v === undefined || v === null) continue
       query = query.eq(k, v)
     }
@@ -144,15 +254,16 @@ const sbAdapter = {
 
     const pkVal = rows[0].id || rows[0]._id
     const pkCol = rows[0].id !== undefined ? "id" : "_id"
-    const { data, error } = await sb.from(table).update(finalPatch).eq(pkCol, pkVal).select().single()
+    const { data, error } = await sb.from(table).update(normalizedPatch).eq(pkCol, pkVal).select().single()
     if (error) throw new Error(`[Supabase] updateRow ${table}: ${error.message}`)
-    return data
+    return restoreCamelCase(data)
   },
 
   async deleteRow(table: string, filters: Record<string, any>): Promise<boolean> {
     const sb = getSupabase()
+    const normalized = normalizeFilters(filters)
     let query = sb.from(table).delete()
-    for (const [k, v] of Object.entries(filters)) {
+    for (const [k, v] of Object.entries(normalized)) {
       if (v === undefined || v === null) continue
       query = query.eq(k, v)
     }

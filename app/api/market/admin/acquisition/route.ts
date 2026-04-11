@@ -30,6 +30,10 @@ import {
   requestWithdrawal,
   publishB2BLead,
   publishVCLead,
+  createCollectTask,
+  updateTaskStatus,
+  loadCollectTempData,
+  syncTempToBloggers,
 } from "@/lib/market/acquisition"
 import { sendEmail } from "@/lib/market/send-email"
 
@@ -40,14 +44,12 @@ export async function GET(request: NextRequest) {
   const admin = verifyMarketingAdmin(request)
   const userId = getUserIdFromRequest(request)
   
-  console.log("[DEBUG API] Cookies:", request.cookies.toString())
   console.log("[DEBUG API] admin:", admin, "userId:", userId)
   
   if (!admin) return errorJson("Unauthorized", "Unauthorized", 401)
 
   try {
     const data = await loadAcquisitionBootstrap(userId)
-    console.log("[DEBUG API] Returning data with profile:", data.profile)
     return successJson({ data })
   } catch (error) {
     return errorJson(error, "Failed to load acquisition data")
@@ -259,6 +261,31 @@ export async function POST(request: NextRequest) {
         String(body.leadId || ""),
         Boolean(body.isPublic)
       )
+      return successJson({ result })
+    }
+
+    if (action === "create_collect_task") {
+      const result = await createCollectTask(userId, {
+        taskName: String(body.taskName || ""),
+        platform: String(body.platform || "抖音"),
+        keyword: String(body.keyword || ""),
+        maxLimit: Number(body.maxLimit || 1000),
+      })
+      return successJson({ result })
+    }
+
+    if (action === "update_collect_task_status") {
+      const result = await updateTaskStatus(userId, String(body.taskId || ""), String(body.status || ""))
+      return successJson({ result })
+    }
+
+    if (action === "load_collect_temp") {
+      const rows = await loadCollectTempData(userId, String(body.taskId || ""))
+      return successJson({ data: rows })
+    }
+
+    if (action === "sync_temp_to_bloggers") {
+      const result = await syncTempToBloggers(userId, String(body.taskId || ""))
       return successJson({ result })
     }
 

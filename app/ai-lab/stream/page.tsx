@@ -38,7 +38,7 @@ export default function StreamDemoPage() {
             onClick={run}
             disabled={isStreaming}
           >
-            {isStreaming ? "生成中..." : "开始生成（流式）"}
+            {isStreaming ? "生成中…" : "开始生成（流式）"}
           </button>
           <button className="px-3 py-1.5 rounded-md border" onClick={stop}>
             停止

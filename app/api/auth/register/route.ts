@@ -6,8 +6,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const email = body.email?.trim()
     const password = body.password ?? ""
+    const referralCode = body.referralCode?.trim() || undefined
 
-    const result = await registerUser(email, password)
+    const result = await registerUser(email, password, { referralCode })
 
     if (!result.ok) {
       return NextResponse.json(
@@ -16,10 +17,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({
-      ok: true,
-      message: result.message
-    })
+    return NextResponse.json({ ok: true, message: result.message })
 
   } catch (error: any) {
     console.error("[API /api/auth/register] 错误:", error)

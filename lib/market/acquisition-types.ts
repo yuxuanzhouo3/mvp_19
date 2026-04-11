@@ -3,13 +3,127 @@
 export interface AcquisitionBlogger {
   id: string
   userId?: string // Who created/owns this KOL record
+  taskId?: string // 关联的采集任务ID
   name: string
   platform: string
   followers: string
   email: string
-  status: string // 未联系, 已发邮件, 谈判中, 已签约, 已拒绝
+  homeUrl?: string // 博主主页链接
+  category?: string // 领域分类
+  status: string // 待联系, 已发邀约, 对接中, 已合作, 已发布
   commission: string
   cost: string
+  remark?: string // 备注
+  createdAt: string
+  updatedAt: string
+}
+
+// 采集任务
+export interface BloggerCollectTask {
+  id: string
+  userId: string
+  taskName: string
+  platform: string // 平台：抖音,小红书,YouTube
+  keyword: string // 领域关键词
+  maxLimit: number // 上限1000
+  totalCollect: number // 已抓多少
+  status: string // waiting, running, paused, completed, failed
+  createdAt: string
+  updatedAt: string
+}
+
+// 采集临时数据
+export interface BloggerCollectTemp {
+  id: string
+  taskId: string
+  userId: string
+  name: string // 博主昵称
+  platform: string // 平台
+  followers: string // 粉丝
+  email: string // 邮箱
+  homeUrl: string // 主页
+  category: string // 领域
+  isValid: boolean // 是否有效
+  isSync: boolean // 是否已同步到线索池
+  createdAt: string
+  updatedAt: string
+}
+
+// 邮件模板
+export interface BloggerEmailTemplate {
+  id: string
+  userId: string
+  title: string
+  subject: string
+  content: string
+  createdAt: string
+}
+
+// 邮件发送日志
+export interface BloggerEmailSendLog {
+  id: string
+  userId: string
+  bloggerId: string
+  templateId: string
+  email: string
+  subject: string
+  content: string
+  status: string // success, failed
+  createdAt: string
+}
+
+// 合作确认
+export interface BloggerCooperation {
+  id: string
+  userId: string
+  bloggerId: string
+  bloggerName: string
+  platform: string
+  email: string
+  articleTemplateId: string
+  publishType: string // now, scheduled
+  publishTime: string | null
+  channels: string // 频道IDs，逗号分隔
+  status: string // wait_publish, publishing, published, failed
+  createdAt: string
+  updatedAt: string
+}
+
+// 发布频道
+export interface PublishChannel {
+  id: string
+  userId: string
+  name: string
+  platform: string
+  account: string
+  token: string
+  status: string // active, inactive
+  createdAt: string
+}
+
+// 文章模板
+export interface ArticleTemplate {
+  id: string
+  userId: string
+  title: string
+  content: string
+  images: string // 图片URLs，逗号分隔
+  tags: string // 标签，逗号分隔
+  createdAt: string
+  updatedAt: string
+}
+
+// 发布任务
+export interface PublishTask {
+  id: string
+  userId: string
+  coopId: string
+  bloggerId: string
+  articleId: string
+  channelId: string
+  channelName: string
+  status: string // waiting, publishing, published, failed
+  postUrl: string // 发布后的链接
   createdAt: string
   updatedAt: string
 }
@@ -132,4 +246,144 @@ export interface AcquisitionBootstrapData {
   bloggerProfile?: AcquisitionBlogger
   participations?: AdParticipation[]
   scaffoldProjects?: ScaffoldProject[]
+}
+
+// ==========================================
+// 企业采集相关类型
+// ==========================================
+
+// 企业采集任务
+export interface EnterpriseCollectTask {
+  id: string
+  userId: string
+  taskName: string
+  platform: string // 来源平台
+  keyword: string // 行业关键词
+  maxLimit: number // 上限1000
+  totalCollect: number // 已抓多少
+  status: string // waiting, running, paused, completed, failed
+  createdAt: string
+  updatedAt: string
+}
+
+// 企业采集临时数据
+export interface EnterpriseCollectTemp {
+  id: string
+  taskId: string
+  userId: string
+  name: string // 企业名称
+  region: string // 地区
+  contact: string // 联系人
+  email: string // 邮箱
+  source: string // 来源
+  isValid: boolean // 是否有效
+  isSync: boolean // 是否已同步到线索池
+  createdAt: string
+  updatedAt: string
+}
+
+// 企业邮件模板
+export interface EnterpriseEmailTemplate {
+  id: string
+  userId: string
+  title: string
+  subject: string
+  content: string
+  createdAt: string
+}
+
+// 企业邮件发送日志
+export interface EnterpriseEmailSendLog {
+  id: string
+  userId: string
+  enterpriseId: string
+  templateId: string
+  email: string
+  subject: string
+  content: string
+  status: string // success, failed
+  createdAt: string
+}
+
+// 企业合作确认
+export interface EnterpriseCooperation {
+  id: string
+  userId: string
+  enterpriseId: string
+  enterpriseName: string
+  contact: string
+  email: string
+  status: string // wait_service, in_service, completed
+  createdAt: string
+  updatedAt: string
+}
+
+// ==========================================
+// VC 采集相关类型
+// ==========================================
+
+// VC 采集任务
+export interface VCCollectTask {
+  id: string
+  userId: string
+  taskName: string
+  platform: string // 来源平台
+  keyword: string // 投资赛道关键词
+  maxLimit: number // 上限1000
+  totalCollect: number // 已抓多少
+  status: string // waiting, running, paused, completed, failed
+  createdAt: string
+  updatedAt: string
+}
+
+// VC 采集临时数据
+export interface VCCollectTemp {
+  id: string
+  taskId: string
+  userId: string
+  name: string // VC 机构名称
+  region: string // 地区
+  contact: string // 联系人
+  email: string // 邮箱
+  focus: string // 投资赛道
+  isValid: boolean // 是否有效
+  isSync: boolean // 是否已同步到线索池
+  createdAt: string
+  updatedAt: string
+}
+
+// VC 邮件模板
+export interface VCEmailTemplate {
+  id: string
+  userId: string
+  title: string
+  subject: string
+  content: string
+  createdAt: string
+}
+
+// VC 邮件发送日志
+export interface VCEmailSendLog {
+  id: string
+  userId: string
+  vcId: string
+  templateId: string
+  email: string
+  subject: string
+  content: string
+  status: string // success, failed
+  createdAt: string
+}
+
+// VC 合作确认
+export interface VCCooperation {
+  id: string
+  userId: string
+  vcId: string
+  institution: string // 机构名称
+  contact: string
+  email: string
+  status: string // wait_feedback, in_discussion, completed
+  createdAt: string
+  updatedAt: string
 }

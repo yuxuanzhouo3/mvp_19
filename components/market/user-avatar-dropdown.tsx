@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { User, LogOut, Settings } from "lucide-react"
+import { User, LogOut, Settings, Gift } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface UserAvatarDropdownProps {
@@ -116,6 +116,19 @@ export function UserAvatarDropdown({ user, onLogout }: UserAvatarDropdownProps) 
         >
           <Settings className="mr-3 h-4 w-4 text-slate-400" />
           <span className="font-medium">{isZh ? "账号设置" : "Settings"}</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem 
+          onClick={() => router.push("/market/invite")}
+          className="px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200
+            text-slate-700
+            hover:bg-gradient-to-r hover:from-emerald-500/10 hover:to-teal-500/10 
+            hover:text-emerald-600
+            focus:bg-gradient-to-r focus:from-emerald-500/10 focus:to-teal-500/10
+            focus:text-emerald-600"
+        >
+          <Gift className="mr-3 h-4 w-4 text-slate-400" />
+          <span className="font-medium">{isZh ? "邀请好友" : "Invite Friends"}</span>
         </DropdownMenuItem>
         
         <DropdownMenuSeparator className="bg-gradient-to-r from-transparent via-slate-200 to-transparent my-1" />

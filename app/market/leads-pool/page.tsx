@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { AcquisitionB2BLead, AcquisitionVCLead } from "@/lib/market/acquisition-types"
+import { t } from "@/lib/market/i18n"
 
 type PoolType = "b2b" | "vc"
 
@@ -123,7 +124,7 @@ export default function LeadsPoolPage() {
   const LoadingState = () => (
     <div className="flex flex-col items-center justify-center py-20 gap-3">
       <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-      <p className="text-sm text-slate-400">加载中...</p>
+      <p className="text-sm text-slate-400">{t("loading")}</p>
     </div>
   )
 
@@ -162,14 +163,14 @@ export default function LeadsPoolPage() {
             className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors group"
           >
             <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-            返回
+            {t("back")}
           </button>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-lg flex items-center justify-center">
               <Sparkles size={12} className="text-white" />
             </div>
             <span className="font-semibold text-slate-800 text-sm">
-              {activeTab === "b2b" ? "企业线索池" : "VC 线索池"}
+              {activeTab === "b2b" ? t("enterprise_leads_pool") : t("vc_leads_pool")}
             </span>
           </div>
           <button
@@ -177,7 +178,7 @@ export default function LeadsPoolPage() {
             className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
           >
             <Handshake size={15} />
-            我的申请
+            {t("my_applications")}
           </button>
         </div>
       </header>
@@ -186,7 +187,7 @@ export default function LeadsPoolPage() {
 
         {/* Tab switcher */}
         <div className="flex gap-2 p-1.5 rounded-2xl mb-6 w-fit" style={glassCard}>
-          {([["b2b", Building2, "企业线索 (B2B)"], ["vc", Landmark, "VC 线索池"]] as const).map(([tab, Icon, label]) => (
+          {([["b2b", Building2, t("enterprise_leads")], ["vc", Landmark, t("vc_leads_pool")]] as const).map(([tab, Icon, label]) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -207,16 +208,16 @@ export default function LeadsPoolPage() {
           {activeTab === "b2b" ? (
             <div className="flex flex-wrap gap-3 items-end">
               <div className="flex-1 min-w-[180px]">
-                <Label className="text-xs text-slate-400 mb-1.5 block">所属区域</Label>
+                <Label className="text-xs text-slate-400 mb-1.5 block">{t("region")}</Label>
                 <div className="relative">
                   <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <Input placeholder="如：北京、深圳" className="pl-8 h-9 rounded-xl bg-white/60 border-white/60 text-sm" value={b2bFilters.region} onChange={e => setB2bFilters(p => ({ ...p, region: e.target.value }))} />
                 </div>
               </div>
               <div className="w-40">
-                <Label className="text-xs text-slate-400 mb-1.5 block">跟进状态</Label>
+                <Label className="text-xs text-slate-400 mb-1.5 block">{t("progress_status")}</Label>
                 <Select value={b2bFilters.status || "all"} onValueChange={v => setB2bFilters(p => ({ ...p, status: v === "all" ? "" : v }))}>
-                  <SelectTrigger className="h-9 rounded-xl bg-white/60 border-white/60 text-sm"><SelectValue placeholder="全部" /></SelectTrigger>
+                  <SelectTrigger className="h-9 rounded-xl bg-white/60 border-white/60 text-sm"><SelectValue placeholder={t("all")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">全部状态</SelectItem>
                     <SelectItem value="初步接触">初步接触</SelectItem>
@@ -227,47 +228,47 @@ export default function LeadsPoolPage() {
                 </Select>
               </div>
               <div className="w-36">
-                <Label className="text-xs text-slate-400 mb-1.5 block">排序</Label>
+                <Label className="text-xs text-slate-400 mb-1.5 block">{t("sort")}</Label>
                 <Select value={b2bFilters.sortBy} onValueChange={v => setB2bFilters(p => ({ ...p, sortBy: v as any }))}>
                   <SelectTrigger className="h-9 rounded-xl bg-white/60 border-white/60 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="newest">最新发布</SelectItem>
+                    <SelectItem value="newest">{t("latest")}</SelectItem>
                     <SelectItem value="highestValue">最高价值</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <button onClick={fetchB2BLeads} className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-medium shadow-md shadow-blue-500/20 hover:-translate-y-0.5 transition-all">
-                <Filter size={13} /> 筛选
+                <Filter size={13} /> {t("filter")}
               </button>
             </div>
           ) : (
             <div className="flex flex-wrap gap-3 items-end">
               <div className="flex-1 min-w-[180px]">
-                <Label className="text-xs text-slate-400 mb-1.5 block">所属区域</Label>
+                <Label className="text-xs text-slate-400 mb-1.5 block">{t("region")}</Label>
                 <div className="relative">
                   <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <Input placeholder="如：北京、深圳" className="pl-8 h-9 rounded-xl bg-white/60 border-white/60 text-sm" value={vcFilters.region} onChange={e => setVcFilters(p => ({ ...p, region: e.target.value }))} />
                 </div>
               </div>
               <div className="flex-1 min-w-[180px]">
-                <Label className="text-xs text-slate-400 mb-1.5 block">行业领域</Label>
+                <Label className="text-xs text-slate-400 mb-1.5 block">{t("industry")}</Label>
                 <div className="relative">
                   <TrendingUp size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <Input placeholder="如：AI、SaaS" className="pl-8 h-9 rounded-xl bg-white/60 border-white/60 text-sm" value={vcFilters.focus} onChange={e => setVcFilters(p => ({ ...p, focus: e.target.value }))} />
                 </div>
               </div>
               <div className="w-36">
-                <Label className="text-xs text-slate-400 mb-1.5 block">排序</Label>
+                <Label className="text-xs text-slate-400 mb-1.5 block">{t("sort")}</Label>
                 <Select value={vcFilters.sortBy} onValueChange={v => setVcFilters(p => ({ ...p, sortBy: v as any }))}>
                   <SelectTrigger className="h-9 rounded-xl bg-white/60 border-white/60 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="newest">最新发布</SelectItem>
+                    <SelectItem value="newest">{t("latest")}</SelectItem>
                     <SelectItem value="highestFunding">最高融资额</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <button onClick={fetchVCLeads} className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium shadow-md shadow-purple-500/20 hover:-translate-y-0.5 transition-all">
-                <Filter size={13} /> 筛选
+                <Filter size={13} /> {t("filter")}
               </button>
             </div>
           )}
@@ -314,11 +315,11 @@ export default function LeadsPoolPage() {
                     }`}
                   >
                     <Handshake size={14} />
-                    {getApplyCount(lead.id) >= MAX_APPLY
+                  {getApplyCount(lead.id) >= MAX_APPLY
                       ? "已达申请上限"
                       : getApplyCount(lead.id) > 0
-                        ? `申请合作（${getApplyCount(lead.id)}/${MAX_APPLY}）`
-                        : "申请合作"
+                        ? `${t("apply_coop_btn")}（${getApplyCount(lead.id)}/${MAX_APPLY}）`
+                        : t("apply_coop_btn")
                     }
                   </button>
                 </div>
@@ -365,11 +366,11 @@ export default function LeadsPoolPage() {
                     }`}
                   >
                     <Handshake size={14} />
-                    {getApplyCount(lead.id) >= MAX_APPLY
+                  {getApplyCount(lead.id) >= MAX_APPLY
                       ? "已达申请上限"
                       : getApplyCount(lead.id) > 0
-                        ? `申请对接（${getApplyCount(lead.id)}/${MAX_APPLY}）`
-                        : "申请对接"
+                        ? `${t("apply_connect")}（${getApplyCount(lead.id)}/${MAX_APPLY}）`
+                        : t("apply_connect")
                     }
                   </button>
                 </div>
@@ -421,7 +422,7 @@ export default function LeadsPoolPage() {
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setApplyDialogOpen(false)} className="flex-1 h-11 rounded-full border border-slate-200 text-slate-500 text-sm font-medium hover:bg-slate-50 transition-colors">
-                  取消
+                  {t("cancel")}
                 </button>
                 <button type="submit" disabled={submitting} className={`flex-1 h-11 rounded-full text-white text-sm font-semibold shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${selectedVCLead ? "bg-gradient-to-r from-purple-500 to-pink-500 shadow-purple-500/30" : "bg-gradient-to-r from-blue-500 to-cyan-500 shadow-blue-500/30"}`}>
                   {submitting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}

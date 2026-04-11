@@ -1,7 +1,15 @@
 import { createClient } from "@supabase/supabase-js"
 import * as cloudbase from "@cloudbase/node-sdk"
-import { readFile, writeFile, mkdir } from "node:fs/promises"
-import * as path from "node:path"
+
+// Node.js 模块只在服务端使用，动态导入避免客户端打包报错
+let readFile: any, writeFile: any, mkdir: any, nodePath: any
+if (typeof window === 'undefined') {
+  const fs = require('fs/promises')
+  readFile = fs.readFile
+  writeFile = fs.writeFile
+  mkdir = fs.mkdir
+  nodePath = require('path')
+}
 
 // ==========================================
 // Types
@@ -12,12 +20,28 @@ export type DeploymentRegion = "CN" | "INTL"
 // ==========================================
 // Config & Helpers
 // ==========================================
-// 强制所有接口使用国内 CloudBase 数据库
-const REGION: DeploymentRegion = "CN"
-const DATA_DIR = path.join(process.cwd(), "data", "acquisition")
+// 根据环境变量动态决定区域，不再硬编码
+function getRegion(): DeploymentRegion {
+  const r = (process.env.NEXT_PUBLIC_SITE_REGION || process.env.SITE_REGION || "intl").toLowerCase()
+  return r === "cn" ? "CN" : "INTL"
+}
+
+const DATA_DIR = typeof window === 'undefined' ? require('path').join(process.cwd(), "data", "acquisition") : ""
 
 function nowIso() {
   return new Date().toISOString()
+}
+
+function camelToSnake(str: string): string {
+  return str.replace(/([A-Z])/g, '_$1').toLowerCase()
+}
+
+function normalizeKeys(obj: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {}
+  for (const [k, v] of Object.entries(obj)) {
+    result[camelToSnake(k)] = v
+  }
+  return result
 }
 
 // ==========================================
@@ -66,24 +90,31 @@ function getCloudBase() {
 // Local File (Fallback)
 // ==========================================
 async function ensureLocalDir() {
-  await mkdir(DATA_DIR, { recursive: true })
-}
-
-async function readLocalRows(table: string): Promise<RawRow[]> {
-  await ensureLocalDir()
-  const filePath = path.join(DATA_DIR, `${table}.json`)
-  try {
-    const raw = await readFile(filePath, "utf8")
-    return JSON.parse(raw)
-  } catch {
-    return []
+  if (typeof window === 'undefined') {
+    await mkdir(DATA_DIR, { recursive: true })
   }
 }
 
+async function readLocalRows(table: string): Promise<RawRow[]> {
+  if (typeof window === 'undefined') {
+    await ensureLocalDir()
+    const filePath = require('path').join(DATA_DIR, `${table}.json`)
+    try {
+      const raw = await readFile(filePath, "utf8")
+      return JSON.parse(raw)
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
 async function writeLocalRows(table: string, rows: RawRow[]) {
-  await ensureLocalDir()
-  const filePath = path.join(DATA_DIR, `${table}.json`)
-  await writeFile(filePath, JSON.stringify(rows, null, 2), "utf8")
+  if (typeof window === 'undefined') {
+    await ensureLocalDir()
+    const filePath = require('path').join(DATA_DIR, `${table}.json`)
+    await writeFile(filePath, JSON.stringify(rows, null, 2), "utf8")
+  }
 }
 
 // ==========================================
@@ -91,14 +122,29 @@ async function writeLocalRows(table: string, rows: RawRow[]) {
 // ==========================================
 export const dbAdapter = {
   async loadRows(table: string, filters: RawRow = {}): Promise<RawRow[]> {
+    const REGION = getRegion()
+    console.log(`[dbAdapter.loadRows] 开始查询表 ${table}，区域: ${REGION}，过滤条件: ${JSON.stringify(filters)}`)
     // 1. Try Supabase if in INTL region
-    if (REGION === ("INTL" as any)) {
+    if (REGION === "INTL") {
       const supabase = getSupabase()
       if (supabase) {
-        let query = supabase.from(table).select("*").order("created_at", { ascending: false })
-        for (const [k, v] of Object.entries(filters)) query = query.eq(k, v)
-        const { data, error } = await query
-        if (!error && data) return data
+        console.log(`[dbAdapter.loadRows] 使用 Supabase 查询表 ${table}`)
+        try {
+          let query = supabase.from(table).select("*").order("created_at", { ascending: false })
+          const normalizedFilters = normalizeKeys(filters)
+          for (const [k, v] of Object.entries(normalizedFilters)) query = query.eq(k, v)
+          const { data, error } = await query
+          if (error) {
+            console.error(`[dbAdapter.loadRows] Supabase 查询错误:`, error)
+          } else if (data) {
+            console.log(`[dbAdapter.loadRows] Supabase 查询成功，返回 ${data.length} 条数据`)
+            return data
+          }
+        } catch (error) {
+          console.error(`[dbAdapter.loadRows] Supabase 查询异常:`, error)
+        }
+      } else {
+        console.log(`[dbAdapter.loadRows] Supabase 客户端未初始化`)
       }
     }
 
@@ -106,29 +152,40 @@ export const dbAdapter = {
     if (REGION === "CN") {
       const db = getCloudBase()
       if (db) {
+        console.log(`[dbAdapter.loadRows] 使用 CloudBase 查询表 ${table}`)
         try {
           const res = await db.collection(table).where(filters).get()
-          if (Array.isArray(res.data)) return res.data
+          if (Array.isArray(res.data)) {
+            console.log(`[dbAdapter.loadRows] CloudBase 查询成功，返回 ${res.data.length} 条数据`)
+            return res.data
+          }
         } catch (err) {
-          // If collection doesn't exist, it will be handled by insert
+          console.error(`[dbAdapter.loadRows] CloudBase 查询错误:`, err)
         }
+      } else {
+        console.log(`[dbAdapter.loadRows] CloudBase 客户端未初始化`)
       }
     }
 
     // 3. Fallback to Local File
+    console.log(`[dbAdapter.loadRows] 回退到本地文件查询表 ${table}`)
     const rows = await readLocalRows(table)
-    return rows.filter(r => Object.entries(filters).every(([k, v]) => r[k] === v))
+    const filteredRows = rows.filter(r => Object.entries(filters).every(([k, v]) => r[k] === v))
+    console.log(`[dbAdapter.loadRows] 本地文件查询成功，返回 ${filteredRows.length} 条数据`)
+    return filteredRows
   },
 
   async insertRow(table: string, row: RawRow): Promise<RawRow> {
+    const REGION = getRegion()
     const now = nowIso()
     const finalRow = { ...row, created_at: now, updated_at: now }
 
-    if (REGION === ("INTL" as any)) {
+    if (REGION === "INTL") {
       const supabase = getSupabase()
       if (supabase) {
-        const { data, error } = await supabase.from(table).insert(finalRow).select("*").maybeSingle()
-        if (!error && data) return data
+        const { data, error } = await supabase.from(table).insert(normalizeKeys(finalRow)).select("*").maybeSingle()
+        if (error) console.error(`[Supabase] insertRow ${table}:`, error.message)
+        else return data ?? finalRow
       }
     }
 
@@ -167,14 +224,16 @@ export const dbAdapter = {
   },
 
   async updateRow(table: string, filters: RawRow, patch: RawRow): Promise<RawRow | null> {
+    const REGION = getRegion()
     const now = nowIso()
     const finalPatch = { ...patch, updated_at: now }
 
-    if (REGION === ("INTL" as any)) {
+    if (REGION === "INTL") {
       const supabase = getSupabase()
       if (supabase) {
-        let query = supabase.from(table).update(finalPatch).select("*")
-        for (const [k, v] of Object.entries(filters)) query = query.eq(k, v)
+        let query = supabase.from(table).update(normalizeKeys(finalPatch)).select("*")
+        const normalizedFilters = normalizeKeys(filters)
+        for (const [k, v] of Object.entries(normalizedFilters)) query = query.eq(k, v)
         const { data, error } = await query.maybeSingle()
         if (!error && data) return data
       }
@@ -206,11 +265,13 @@ export const dbAdapter = {
   },
 
   async deleteRow(table: string, filters: RawRow): Promise<boolean> {
-    if (REGION === ("INTL" as any)) {
+    const REGION = getRegion()
+    if (REGION === "INTL") {
       const supabase = getSupabase()
       if (supabase) {
         let query = supabase.from(table).delete()
-        for (const [k, v] of Object.entries(filters)) query = query.eq(k, v)
+        const normalizedFilters = normalizeKeys(filters)
+        for (const [k, v] of Object.entries(normalizedFilters)) query = query.eq(k, v)
         const { error } = await query
         return !error
       }

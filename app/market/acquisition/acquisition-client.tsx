@@ -32,6 +32,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import { t, isIntl } from "@/lib/market/i18n"
 import type {
   AcquisitionBlogger,
   AcquisitionB2BLead,
@@ -116,8 +117,8 @@ function VerificationCard({ profile, onVerify }: { profile?: UserMarketProfile; 
               <Users size={22} />
             </div>
             <div>
-              <p className="text-base font-bold text-slate-800">达人认证</p>
-              <p className="text-sm text-slate-500 mt-0.5">{profile.isInfluencerVerified ? (profile.isRealInfluencer ? '金牌达人' : '已认证达人') : '未认证达人'}</p>
+              <p className="text-base font-bold text-slate-800">{t("influencer_verify")}</p>
+              <p className="text-sm text-slate-500 mt-0.5">{profile.isInfluencerVerified ? (profile.isRealInfluencer ? '金牌达人' : t("influencer_verified")) : '未认证达人'}</p>
             </div>
           </div>
           {!profile.isInfluencerVerified && (
@@ -154,8 +155,8 @@ function VerificationCard({ profile, onVerify }: { profile?: UserMarketProfile; 
               <Building2 size={22} />
             </div>
             <div>
-              <p className="text-base font-bold text-slate-800">商家认证</p>
-              <p className="text-sm text-slate-500 mt-0.5">{profile.isMerchantVerified ? (profile.isRealMerchant ? '金牌商家' : '已认证商家') : '未认证商家'}</p>
+              <p className="text-base font-bold text-slate-800">{t("merchant_verify")}</p>
+              <p className="text-sm text-slate-500 mt-0.5">{profile.isMerchantVerified ? (profile.isRealMerchant ? '金牌商家' : t("merchant_verified")) : '未认证商家'}</p>
             </div>
           </div>
           {!profile.isMerchantVerified && (
@@ -211,7 +212,7 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
             <Wallet size={22} />
           </div>
           <div>
-            <div className="text-sm text-slate-500 font-medium">当前余额</div>
+            <div className="text-sm text-slate-500 font-medium">{t("current_balance")}</div>
             <div className="text-2xl font-bold text-slate-800">¥{profile?.balance || "0.00"}</div>
           </div>
         </div>
@@ -230,7 +231,7 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
             <Award size={22} />
           </div>
           <div>
-            <div className="text-sm text-slate-500 font-medium">累计收益</div>
+            <div className="text-sm text-slate-500 font-medium">{t("total_earnings_task")}</div>
             <div className="text-2xl font-bold text-slate-800">¥{profile?.totalEarnings || "0.00"}</div>
           </div>
         </div>
@@ -249,7 +250,7 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
             <CheckCircle size={22} />
           </div>
           <div>
-            <div className="text-sm text-slate-500 font-medium">已完成任务</div>
+            <div className="text-sm text-slate-500 font-medium">{t("tasks_done")}</div>
             <div className="text-2xl font-bold text-slate-800">{completedParticipations.length}</div>
           </div>
         </div>
@@ -268,7 +269,7 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
             <TrendingUp size={22} />
           </div>
           <div>
-            <div className="text-sm text-slate-500 font-medium">真实用户进度</div>
+            <div className="text-sm text-slate-500 font-medium">{t("real_user_progress")}</div>
             <div className="text-2xl font-bold text-slate-800">{profile?.adViewsCount || 0}/3</div>
           </div>
         </div>
@@ -281,7 +282,7 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mr-3 shadow-md">
               <PlaySquare className="h-4 w-4 text-white" />
             </div>
-            广告任务广场
+            {t("ad_task_square")}
           </h3>
           <div className="grid grid-cols-1 gap-4">
             {ads.filter(ad => ad.status === "投放中").map(ad => {
@@ -316,7 +317,7 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
                         </div>
                         {isDone && (
                           <span className="inline-flex items-center gap-1 mt-1.5 text-xs text-emerald-600 font-medium">
-                            <CheckCircle size={11} /> 已完成，奖励已到账
+                            <CheckCircle size={11} /> {t("task_reward_received")}
                           </span>
                         )}
                       </div>
@@ -327,14 +328,14 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
                       </div>
                       {isDone ? (
                         <div className="px-4 py-2 rounded-full text-sm font-medium bg-slate-200 text-slate-400 cursor-not-allowed select-none">
-                          已观看
+                          {t("watched")}
                         </div>
                       ) : (
                         <button 
                           onClick={() => router.push(`/ad/play/${ad.id}`)}
                           className="px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-300"
                         >
-                          立即观看
+                          {t("watch_now")}
                         </button>
                       )}
                     </div>
@@ -351,7 +352,7 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mr-3 shadow-md">
               <CheckCircle className="h-4 w-4 text-white" />
             </div>
-            已完成的任务
+            {t("tasks_done_section")}
           </h3>
           <div 
             className="rounded-2xl overflow-hidden"
@@ -365,7 +366,7 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
             {completedParticipations.length === 0 ? (
               <div className="p-8 text-center">
                 <CheckCircle size={32} className="text-slate-300 mx-auto mb-2" />
-                <p className="text-slate-400 text-sm">完成广告任务后将显示在这里</p>
+                <p className="text-slate-400 text-sm">{t("task_done_placeholder")}</p>
               </div>
             ) : (
               <div className="divide-y divide-blue-100/60">
@@ -405,7 +406,7 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
               transition-all duration-300 hover:-translate-y-0.5"
           >
             <CreditCard className="h-4 w-4" /> 
-            申请提现
+            {t("withdraw_apply")}
           </button>
         </div>
       </div>
@@ -431,6 +432,34 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
   const pageSize = 10
+  const router = useRouter()
+
+  const handleApplyCooperation = async (blogger: AcquisitionBlogger) => {
+    const msg = prompt(`申请与「${blogger.name}」合作，可留言（可选）：`)
+    if (msg === null) return
+    try {
+      const res = await fetch("/api/market/blogger-cooperation", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "apply",
+          bloggerId: blogger.id,
+          bloggerName: blogger.name,
+          platform: blogger.platform,
+          email: blogger.email,
+          cost: blogger.cost,
+          commission: blogger.commission,
+          message: msg,
+          bloggerOwnerId: blogger.userId,  // 博主录入者（被申请方）
+          applicantName: profile?.nickname || "",
+          applicantEmail: profile?.email || "",
+        })
+      })
+      const json = await res.json()
+      if (json.ok) alert(json.message || "申请已发送！可在「博主合作 → 我发出的申请」中查看")
+      else alert(json.message || "申请失败")
+    } catch { alert("申请失败，请重试") }
+  }
 
   // 博主池页面数据过滤 (Moved to top to follow Hook rules)
   const filteredBloggers = useMemo(() => {
@@ -477,9 +506,9 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
       return (
         <div className="space-y-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold flex items-center"><Users className="mr-2 h-5 w-5 text-blue-600" /> 个人达人页面</h3>
+            <h3 className="text-lg font-bold flex items-center"><Users className="mr-2 h-5 w-5 text-blue-600" /> {t("personal_influencer_page")}</h3>
             <Button variant="outline" onClick={() => onSetSubMode('pool')}>
-              <Globe className="mr-2 h-4 w-4" /> 进入博主池
+              <Globe className="mr-2 h-4 w-4" /> {t("enter_blogger_pool")}
             </Button>
           </div>
           
@@ -487,28 +516,28 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
             <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
               <div className="rounded-lg border bg-blue-50 p-3 text-blue-600"><Users size={20} /></div>
               <div>
-                <div className="text-sm text-muted-foreground">达人状态</div>
-                <div className="font-bold">未认证达人</div>
+                <div className="text-sm text-muted-foreground">{t("influencer_status")}</div>
+                <div className="font-bold">{t("uncertified_influencer_label")}</div>
               </div>
             </div>
             <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
               <div className="rounded-lg border bg-green-50 p-3 text-green-600"><DollarSign size={20} /></div>
               <div>
-                <div className="text-sm text-muted-foreground">累计商单收益</div>
+                <div className="text-sm text-muted-foreground">{t("total_order_earnings")}</div>
                 <div className="text-2xl font-bold">¥0</div>
               </div>
             </div>
             <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
               <div className="rounded-lg border bg-blue-50 p-3 text-blue-600"><Wallet size={20} /></div>
               <div>
-                <div className="text-sm text-muted-foreground">账户余额</div>
+                <div className="text-sm text-muted-foreground">{t("current_balance")}</div>
                 <div className="text-2xl font-bold">¥{profile?.balance || "0.00"}</div>
               </div>
             </div>
             <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
               <div className="rounded-lg border bg-purple-50 p-3 text-purple-600"><Award size={20} /></div>
               <div>
-                <div className="text-sm text-muted-foreground">合作单数</div>
+                <div className="text-sm text-muted-foreground">{t("coop_count")}</div>
                 <div className="text-2xl font-bold">0</div>
               </div>
             </div>
@@ -519,12 +548,12 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
               <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-4">
                 <Users size={32} />
               </div>
-              <h3 className="text-xl font-bold mb-2">开启达人认证，解锁商单管理功能</h3>
+              <h3 className="text-xl font-bold mb-2">{t("unlock_influencer_title")}</h3>
               <p className="text-muted-foreground mb-6">
-                完成达人认证后，您可以录入和管理博主商单，跟踪合作进度，享受达人专属权益。
-                              </p>
+                {t("unlock_influencer_desc")}
+              </p>
               <Button size="lg" onClick={() => onVerify('influencer')} className="bg-blue-600 hover:bg-blue-700">
-                <Award className="mr-2 h-5 w-5" /> 立即认证达人
+                <Award className="mr-2 h-5 w-5" /> {t("verify_influencer_now")}
               </Button>
             </CardContent>
           </Card>
@@ -535,9 +564,9 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold flex items-center"><User className="mr-2 h-5 w-5 text-blue-600" /> 个人达人页面</h3>
+          <h3 className="text-lg font-bold flex items-center"><User className="mr-2 h-5 w-5 text-blue-600" /> {t("personal_influencer_page")}</h3>
           <Button variant="outline" onClick={() => onSetSubMode('pool')}>
-            <Globe className="mr-2 h-4 w-4" /> 进入博主池
+            <Globe className="mr-2 h-4 w-4" /> {t("enter_blogger_pool")}
           </Button>
         </div>
 
@@ -545,38 +574,38 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
           <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
             <div className="rounded-lg border bg-blue-50 p-3 text-blue-600"><Users size={20} /></div>
             <div>
-              <div className="text-sm text-muted-foreground">达人状态</div>
-              <div className="font-bold text-sm">{!profile?.isInfluencerVerified ? '未认证达人' : profile?.isRealInfluencer ? '🔥 真实达人' : '认证达人'}</div>
+              <div className="text-sm text-muted-foreground">{t("influencer_status")}</div>
+              <div className="font-bold text-sm">{!profile?.isInfluencerVerified ? t("uncertified_influencer_label") : profile?.isRealInfluencer ? '🔥 真实达人' : t("influencer_verified")}</div>
             </div>
           </div>
           <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
             <div className="rounded-lg border bg-green-50 p-3 text-green-600"><DollarSign size={20} /></div>
             <div>
-              <div className="text-sm text-muted-foreground">累计商单收益</div>
+              <div className="text-sm text-muted-foreground">{t("total_order_earnings")}</div>
               <div className="text-2xl font-bold">¥{profile?.totalEarnings || "0"}</div>
             </div>
           </div>
           <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
             <div className="rounded-lg border bg-blue-50 p-3 text-blue-600"><Wallet size={20} /></div>
             <div>
-              <div className="text-sm text-muted-foreground">账户余额</div>
+              <div className="text-sm text-muted-foreground">{t("current_balance")}</div>
               <div className="text-2xl font-bold">¥{profile?.balance || "0.00"}</div>
             </div>
           </div>
           <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
             <div className="rounded-lg border bg-purple-50 p-3 text-purple-600"><Award size={20} /></div>
             <div>
-              <div className="text-sm text-muted-foreground">合作单数</div>
+              <div className="text-sm text-muted-foreground">{t("coop_count")}</div>
               <div className="text-2xl font-bold">0</div>
             </div>
           </div>
         </div>
 
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-bold flex items-center"><Users className="mr-2 h-5 w-5 text-blue-600" /> 我的达人资料主页</h3>
+          <h3 className="text-lg font-bold flex items-center"><Users className="mr-2 h-5 w-5 text-blue-600" /> {t("my_influencer_profile")}</h3>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={onAddBlogger}>
-              <Plus className="mr-2 h-4 w-4" /> 新增博主账号
+              <Plus className="mr-2 h-4 w-4" /> {t("add_blogger_account")}
             </Button>
           </div>
         </div>
@@ -600,19 +629,19 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
                   borderBottom: '1px solid #e0eaff'
                 }}
               >
-                <TableHead className="font-bold text-blue-900 py-4">达人昵称</TableHead>
-                <TableHead className="font-bold text-blue-900 py-4">主营平台</TableHead>
-                <TableHead className="font-bold text-blue-900 py-4">单条报价</TableHead>
-                <TableHead className="font-bold text-blue-900 py-4">分成比例</TableHead>
-                <TableHead className="font-bold text-blue-900 py-4">联系邮箱</TableHead>
-                <TableHead className="text-right font-bold text-blue-900 py-4">操作</TableHead>
+                <TableHead className="font-bold text-blue-900 py-4">{t("influencer_name")}</TableHead>
+                <TableHead className="font-bold text-blue-900 py-4">{t("main_platform")}</TableHead>
+                <TableHead className="font-bold text-blue-900 py-4">{t("unit_price")}</TableHead>
+                <TableHead className="font-bold text-blue-900 py-4">{t("commission")}</TableHead>
+                <TableHead className="font-bold text-blue-900 py-4">{t("contact_email")}</TableHead>
+                <TableHead className="text-right font-bold text-blue-900 py-4">{t("operation")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {bloggers.filter(b => b.status !== '已删除').length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-32 text-center text-slate-500">
-                    尚未设置达人资料。点击右上角「新增博主账号」开始。
+                    {t("no_blogger_profile")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -652,13 +681,13 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
                         onClick={() => onUpdateProfile(blogger)}
                         className="text-blue-600 hover:text-blue-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-all duration-200 mr-2"
                       >
-                        更新
+                        {t("update")}
                       </button>
                       <button 
                         onClick={() => onDeleteBlogger(blogger.id)}
                         className="text-red-500 hover:text-red-600 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all duration-200"
                       >
-                        删除
+                        {t("delete")}
                       </button>
                     </TableCell>
                   </TableRow>
@@ -675,16 +704,21 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold flex items-center"><Globe className="mr-2 h-5 w-5 text-blue-600" /> 1000万博主增长引擎（博主池）</h3>
-        <Button variant="default" onClick={() => onSetSubMode('personal')} className="bg-blue-600">
-          <User className="mr-2 h-4 w-4" /> 个人博主管理
-        </Button>
+        <h3 className="text-lg font-bold flex items-center"><Globe className="mr-2 h-5 w-5 text-blue-600" /> {t("blogger_pool_title")}</h3>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => router.push('/market/blogger-cooperation')} className="border-blue-200 text-blue-600 hover:bg-blue-50">
+            <Handshake className="mr-2 h-4 w-4" /> {t("blogger_coop")}
+          </Button>
+          <Button variant="default" onClick={() => onSetSubMode('personal')} className="bg-blue-600">
+            <User className="mr-2 h-4 w-4" /> {t("blogger_mgmt")}
+          </Button>
+        </div>
       </div>
 
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input 
-          placeholder="搜索博主昵称、平台、邮箱..."
+          placeholder={t("search_blogger_placeholder")}
           className="pl-10 py-6 text-lg rounded-xl shadow-sm border-blue-100" 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -710,13 +744,13 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
                 borderBottom: '1px solid #e0eaff'
               }}
             >
-              <TableHead className="font-bold text-blue-900 py-4">达人昵称</TableHead>
-              <TableHead className="font-bold text-blue-900 py-4">主营平台</TableHead>
-              <TableHead className="font-bold text-blue-900 py-4">单条报价</TableHead>
-              <TableHead className="font-bold text-blue-900 py-4">分成比例</TableHead>
-              <TableHead className="font-bold text-blue-900 py-4">联系邮箱</TableHead>
-              <TableHead className="font-bold text-blue-900 py-4">状态</TableHead>
-              <TableHead className="text-right font-bold text-blue-900 py-4">操作</TableHead>
+              <TableHead className="font-bold text-blue-900 py-4">{t("influencer_name")}</TableHead>
+              <TableHead className="font-bold text-blue-900 py-4">{t("main_platform")}</TableHead>
+              <TableHead className="font-bold text-blue-900 py-4">{t("unit_price")}</TableHead>
+              <TableHead className="font-bold text-blue-900 py-4">{t("commission")}</TableHead>
+              <TableHead className="font-bold text-blue-900 py-4">{t("contact_email")}</TableHead>
+              <TableHead className="font-bold text-blue-900 py-4">{t("status")}</TableHead>
+              <TableHead className="text-right font-bold text-blue-900 py-4">{t("operation")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -725,7 +759,7 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
                 <TableCell colSpan={7} className="h-48 text-center text-slate-500">
                   <div className="flex flex-col items-center justify-center">
                     <Users className="h-10 w-10 mb-2 opacity-20" />
-                    <p>暂无博主数据，快去「个人博主管理」录入吧！</p>
+                    <p>{t("no_blogger_data")}</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -782,22 +816,32 @@ function InfluencerModeView({ profile, bloggerProfile, bloggers, allBloggers, su
                           border: '1px solid rgba(34,197,94,0.2)'
                         }}
                       >
-                        可用
+                        {t("available")}
                       </span>
                     )}
                   </TableCell>
                   <TableCell className="text-right py-4">
                     {blogger.status === '已删除' ? (
-                      <span className="text-slate-400 text-sm cursor-not-allowed">不可用</span>
+                      <span className="text-slate-400 text-sm cursor-not-allowed">{t("unavailable")}</span>
                     ) : (
-                      <a 
-                        href={getWebMailUrl(blogger.email)} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-all duration-200"
-                      >
-                        联系洽谈
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a 
+                          href={getWebMailUrl(blogger.email)} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-all duration-200"
+                        >
+                          {t("contact_discuss")}
+                        </a>
+                        {blogger.userId !== profile?.id && (
+                          <button
+                            onClick={() => handleApplyCooperation(blogger)}
+                            className="text-emerald-600 hover:text-emerald-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-50 transition-all duration-200"
+                          >
+                            {t("apply_coop")}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
@@ -912,21 +956,21 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
           <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
             <div className="rounded-lg border bg-purple-50 p-3 text-purple-600"><Building2 size={20} /></div>
             <div>
-              <div className="text-sm text-muted-foreground">商家身份</div>
-              <div className="font-bold">未认证商家</div>
+              <div className="text-sm text-muted-foreground">{t("merchant_identity")}</div>
+              <div className="font-bold">{t("uncertified_merchant_label")}</div>
             </div>
           </div>
           <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
             <div className="rounded-lg border bg-blue-50 p-3 text-blue-600"><BarChart3 size={20} /></div>
             <div>
-              <div className="text-sm text-muted-foreground">累计投放消费</div>
+              <div className="text-sm text-muted-foreground">{t("total_ad_spend")}</div>
               <div className="text-2xl font-bold">¥0</div>
             </div>
           </div>
           <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
             <div className="rounded-lg border bg-green-50 p-3 text-green-600"><Network size={20} /></div>
             <div>
-              <div className="text-sm text-muted-foreground">线索转化率</div>
+              <div className="text-sm text-muted-foreground">{t("lead_conversion")}</div>
               <div className="text-2xl font-bold">0%</div>
             </div>
           </div>
@@ -937,12 +981,12 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
             <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mx-auto mb-4">
               <Building2 size={32} />
             </div>
-            <h3 className="text-xl font-bold mb-2">开启商家认证，解锁企业级获客功能</h3>
+            <h3 className="text-xl font-bold mb-2">{t("unlock_merchant_title")}</h3>
             <p className="text-muted-foreground mb-6">
-              完成商家认证后，您可以发布广告任务、管理企业线索、对接投资机构，享受商家专属权益。
+              {t("unlock_merchant_desc")}
             </p>
             <Button size="lg" onClick={() => onVerify('merchant')} className="bg-purple-600 hover:bg-purple-700">
-              <Building2 className="mr-2 h-5 w-5" /> 立即认证商家
+              <Building2 className="mr-2 h-5 w-5" /> {t("verify_merchant_now")}
             </Button>
             <p className="text-xs text-muted-foreground mt-4">
               认证后即可使用广告发布、线索管理、VC对接等功能。
@@ -959,21 +1003,21 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
         <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
           <div className="rounded-lg border bg-purple-50 p-3 text-purple-600"><Building2 size={20} /></div>
           <div>
-            <div className="text-sm text-muted-foreground">商家身份</div>
-            <div className="font-bold">{!profile?.isMerchantVerified ? '未认证商家' : profile?.isRealMerchant ? '💎 真实商家 (享补贴)' : '认证商家'}</div>
+            <div className="text-sm text-muted-foreground">{t("merchant_identity")}</div>
+            <div className="font-bold">{!profile?.isMerchantVerified ? t("uncertified_merchant_label") : profile?.isRealMerchant ? '💎 真实商家 (享补贴)' : t("merchant_verified")}</div>
           </div>
         </div>
         <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
           <div className="rounded-lg border bg-blue-50 p-3 text-blue-600"><BarChart3 size={20} /></div>
           <div>
-            <div className="text-sm text-muted-foreground">累计投放消费</div>
+            <div className="text-sm text-muted-foreground">{t("total_ad_spend")}</div>
             <div className="text-2xl font-bold">¥50.00</div>
           </div>
         </div>
         <div className="rounded-xl border bg-background p-5 flex items-center space-x-4">
           <div className="rounded-lg border bg-green-50 p-3 text-green-600"><Network size={20} /></div>
           <div>
-            <div className="text-sm text-muted-foreground">线索转化率</div>
+            <div className="text-sm text-muted-foreground">{t("lead_conversion")}</div>
             <div className="text-2xl font-bold">12.5%</div>
           </div>
         </div>
@@ -1002,7 +1046,7 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
                 : 'transparent'
             }}
           >
-            我的投放广告
+            {t("my_ads")}
           </button>
           <button 
             onClick={() => setActiveTab("leads")}
@@ -1017,7 +1061,7 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
                 : 'transparent'
             }}
           >
-            企业线索 (B2B)
+            {t("enterprise_leads")}
           </button>
           <button 
             onClick={() => setActiveTab("vc")}
@@ -1032,14 +1076,14 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
                 : 'transparent'
             }}
           >
-            投融资对接 (VC)
+            {t("vc_leads")}
           </button>
         </div>
 
         <TabsContent value="ads" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">发布 Ad-to-Earn 广告</h4>
-            <Button size="sm" onClick={onAddAd} className="bg-blue-600"><Plus className="mr-2 h-4 w-4" /> 发布广告</Button>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{t("publish_ad_earn_section")}</h4>
+            <Button size="sm" onClick={onAddAd} className="bg-blue-600"><Plus className="mr-2 h-4 w-4" /> {t("publish_ad")}</Button>
           </div>
           
           <div 
@@ -1060,17 +1104,17 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
                     borderBottom: '1px solid #e0eaff'
                   }}
                 >
-                  <TableHead className="font-bold text-blue-900 py-4">品牌/名称</TableHead>
-                  <TableHead className="font-bold text-blue-900 py-4">类型</TableHead>
-                  <TableHead className="font-bold text-blue-900 py-4">要求时长</TableHead>
-                  <TableHead className="font-bold text-blue-900 py-4">观看次数</TableHead>
-                  <TableHead className="font-bold text-blue-900 py-4">状态</TableHead>
-                  <TableHead className="text-right font-bold text-blue-900 py-4">操作</TableHead>
+                  <TableHead className="font-bold text-blue-900 py-4">{t("brand_name")}</TableHead>
+                  <TableHead className="font-bold text-blue-900 py-4">{t("type")}</TableHead>
+                  <TableHead className="font-bold text-blue-900 py-4">{t("duration")}</TableHead>
+                  <TableHead className="font-bold text-blue-900 py-4">{t("views")}</TableHead>
+                  <TableHead className="font-bold text-blue-900 py-4">{t("status")}</TableHead>
+                  <TableHead className="text-right font-bold text-blue-900 py-4">{t("operation")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {ads.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="h-32 text-center text-slate-500">暂无发布的广告</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="h-32 text-center text-slate-500">{t("no_ads")}</TableCell></TableRow>
                 ) : (
                   ads.map((ad, index) => (
                     <TableRow 
@@ -1118,10 +1162,10 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
             <div className="flex justify-between items-center">
               <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
-                我跟进的客户
+                {t("my_follow_customers")}
                 <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">{followLeads.length}</Badge>
               </h4>
-              <Button size="sm" onClick={onAddB2BFollow} className="bg-purple-600"><Plus className="mr-2 h-4 w-4" /> 录入客户</Button>
+              <Button size="sm" onClick={onAddB2BFollow} className="bg-purple-600"><Plus className="mr-2 h-4 w-4" /> {t("add_customer")}</Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {followLeads.length === 0 ? (
@@ -1187,18 +1231,18 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
             <div className="flex justify-between items-center">
               <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <Globe className="h-4 w-4" />
-                我发布的需求
+                {t("my_publish_demands")}
                 <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">{publishLeads.length}</Badge>
               </h4>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={onViewPublicPool} className="rounded-full border-slate-200 text-slate-600 hover:bg-slate-50">
-                  <Globe className="mr-2 h-4 w-4" /> 线索池
+                  <Globe className="mr-2 h-4 w-4" /> {t("leads_pool_btn")}
                 </Button>
                 <Button size="sm" variant="outline" onClick={onViewApplications} className="rounded-full border-slate-200 text-slate-600 hover:bg-slate-50">
-                  <Handshake className="mr-2 h-4 w-4" /> 收到的申请
+                  <Handshake className="mr-2 h-4 w-4" /> {t("received_applications")}
                 </Button>
                 <Button size="sm" onClick={onAddB2BPublish} className="bg-emerald-600 rounded-full shadow-lg shadow-emerald-500/20">
-                  <Plus className="mr-2 h-4 w-4" /> 发布需求
+                  <Plus className="mr-2 h-4 w-4" /> {t("publish_demand")}
                 </Button>
               </div>
             </div>
@@ -1302,9 +1346,9 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
             <div className="flex justify-between items-center">
               <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <Landmark className="h-4 w-4" />
-                我跟进的 VC 机构
+                {t("my_follow_vc")}
               </h4>
-              <Button size="sm" onClick={onAddVCFollow} className="bg-emerald-600"><Plus className="mr-2 h-4 w-4" /> 录入 VC 机构</Button>
+              <Button size="sm" onClick={onAddVCFollow} className="bg-emerald-600"><Plus className="mr-2 h-4 w-4" /> {t("add_vc")}</Button>
             </div>
             
             <div 
@@ -1379,9 +1423,9 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
             <div className="flex justify-between items-center">
               <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
-                我发布的融资需求
+                {t("my_publish_funding")}
               </h4>
-              <Button size="sm" onClick={onAddVCPublish} className="bg-emerald-600"><Plus className="mr-2 h-4 w-4" /> 发布融资需求</Button>
+              <Button size="sm" onClick={onAddVCPublish} className="bg-emerald-600"><Plus className="mr-2 h-4 w-4" /> {t("publish_funding")}</Button>
             </div>
             
             <div 
@@ -1485,7 +1529,7 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
             <div className="bg-gradient-to-r from-red-500 to-rose-500 px-6 py-5 relative overflow-hidden">
               <div className="absolute -top-8 -right-8 w-24 h-24 bg-white/10 rounded-full" />
               <div className="relative z-10">
-                <h3 className="text-lg font-bold text-white">确认删除？</h3>
+                <h3 className="text-lg font-bold text-white">{t("confirm_delete")}</h3>
                 <p className="text-white/70 text-xs mt-1">
                   将从页面移除「{confirmDeleteName}」，数据库不受影响
                 </p>
@@ -1496,13 +1540,13 @@ function MerchantModeView({ ads, b2bLeads, vcFollowLeads, vcPublishLeads, profil
                 onClick={() => { setConfirmDeleteId(null); setConfirmDeleteName("") }}
                 className="flex-1 h-11 rounded-full border border-slate-200 text-slate-500 text-sm font-medium hover:bg-slate-50 transition-colors"
               >
-                否，取消
+                {t("no_cancel")}
               </button>
               <button
                 onClick={confirmDelete}
                 className="flex-1 h-11 rounded-full bg-gradient-to-r from-red-500 to-rose-500 text-white text-sm font-semibold shadow-lg shadow-red-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
               >
-                <X size={15} /> 是，删除
+                <X size={15} /> {t("yes_delete")}
               </button>
             </div>
           </div>
@@ -1838,18 +1882,18 @@ export function AcquisitionClient() {
               <Target size={28} />
             </span>
             <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-              获客系统 · 用户端 (V2)
+              {t("system_title")}
             </span>
           </h1>
-          <p className="text-slate-500 mt-2 text-sm">统一用户体系 · 数据安全隔离 · 三大业务模式</p>
+          <p className="text-slate-500 mt-2 text-sm">{t("system_sub")}</p>
         </div>
         
         {/* Mode Switch Buttons */}
         <div className="flex items-center space-x-2 p-1.5 rounded-2xl bg-white/60 backdrop-blur-sm border border-slate-200/60 shadow-sm">
           {[
-            { mode: 'task' as ViewMode, label: '任务模式', gradient: 'from-blue-500 to-cyan-500' },
-            { mode: 'influencer' as ViewMode, label: '达人模式', gradient: 'from-purple-500 to-pink-500' },
-            { mode: 'merchant' as ViewMode, label: '商家模式', gradient: 'from-emerald-500 to-teal-500' },
+            { mode: 'task' as ViewMode, label: t("task_mode"), gradient: 'from-blue-500 to-cyan-500' },
+            { mode: 'influencer' as ViewMode, label: t("influencer_mode"), gradient: 'from-purple-500 to-pink-500' },
+            { mode: 'merchant' as ViewMode, label: t("merchant_mode"), gradient: 'from-emerald-500 to-teal-500' },
           ].map(({ mode, label, gradient }) => (
             <button
               key={mode}
@@ -1869,6 +1913,27 @@ export function AcquisitionClient() {
         </div>
 
         <div className="flex items-center space-x-3">
+          {/* AI 搜索按钮 */}
+          <div className="relative group">
+            <button
+              onClick={() => window.location.href = '/market/ai-search'}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md shadow-purple-500/25 hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all duration-200"
+            >
+              🤖 {t("ai_search")}
+            </button>
+            {/* Tooltip */}
+            <div className="absolute right-0 top-full mt-2 w-64 rounded-xl bg-slate-900 text-white text-xs p-3 shadow-xl z-50 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
+              <p className="font-semibold mb-1.5 text-purple-300">🤖 AI 智能搜索</p>
+              <p className="text-slate-300 leading-relaxed">输入想要合作的博主、企业或 VC 机构信息，AI 自动搜索并提取：</p>
+              <ul className="mt-1.5 space-y-0.5 text-slate-400">
+                <li>· 名称 &amp; 联系邮箱</li>
+                <li>· 官网 &amp; 简介</li>
+                <li>· 支持直接发送合作邀约</li>
+              </ul>
+              <p className="mt-1.5 text-slate-500">每次 ¥0.1，每月上限 100 次</p>
+              <div className="absolute -top-1.5 right-4 w-3 h-3 bg-slate-900 rotate-45" />
+            </div>
+          </div>
           <Button variant="outline" size="icon" className="rounded-full relative">
             <Bell size={18} />
             <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-background"></span>
@@ -1898,7 +1963,7 @@ export function AcquisitionClient() {
             </div>
           ) : (
             <Button variant="outline" size="sm" onClick={() => setIsLoginPromptOpen(true)}>
-              登录
+              {t("login")}
             </Button>
           )}
         </div>
@@ -1987,7 +2052,7 @@ export function AcquisitionClient() {
         <div className="fixed inset-0 bg-white/20 backdrop-blur-[1px] z-[60] flex items-center justify-center">
           <div className="bg-white p-4 rounded-xl shadow-lg border flex items-center space-x-3">
             <Loader2 className="animate-spin text-primary" size={20} />
-            <span className="text-sm font-medium">处理中...</span>
+            <span className="text-sm font-medium">{t("processing_action")}</span>
           </div>
         </div>
       )}
@@ -2041,7 +2106,7 @@ function AddFormModal({ type, onClose, onSubmit, initialData }: {
   const handleVideoUpload = async (file: File) => {
     if (!file) return
     setVideoUploading(true)
-    setVideoUploadProgress("上传中...")
+    setVideoUploadProgress(isIntl ? "Uploading..." : "上传中...")
     try {
       const fd = new FormData()
       fd.append("file", file)
@@ -2049,12 +2114,12 @@ function AddFormModal({ type, onClose, onSubmit, initialData }: {
       const json = await res.json()
       if (json.ok && json.data?.videoUrl) {
         handleChange("videoUrl", json.data.videoUrl)
-        setVideoUploadProgress("✓ 上传成功")
+        setVideoUploadProgress(isIntl ? "✓ Uploaded" : "✓ 上传成功")
       } else {
-        setVideoUploadProgress(`✗ ${json.message || "上传失败"}`)
+        setVideoUploadProgress(`✗ ${json.message || (isIntl ? "Upload failed" : "上传失败")}`)
       }
     } catch {
-      setVideoUploadProgress("✗ 网络错误，请重试")
+      setVideoUploadProgress(isIntl ? "✗ Network error" : "✗ 网络错误，请重试")
     } finally {
       setVideoUploading(false)
     }
@@ -2071,148 +2136,148 @@ function AddFormModal({ type, onClose, onSubmit, initialData }: {
 
   const configs: Record<string, { title: string; icon: React.ReactNode; gradient: string; wide?: boolean; showPublishOption?: boolean; fields: Array<{ name: string; label: string; type: string; placeholder?: string; options?: string[]; step?: string; fullWidth?: boolean }> }> = {
     blogger: {
-      title: "达人资料设置",
+      title: isIntl ? "Influencer Profile Setup" : "达人资料设置",
       icon: <Users className="h-5 w-5" />,
       gradient: "from-purple-500 to-pink-500",
       fields: [
-        { name: "name", label: "达人昵称", type: "text", placeholder: "输入你的账号名称" },
-        { name: "platform", label: "主营平台", type: "text", placeholder: "选择你主要活跃的平台（抖音 / 小红书 / B 站 / 快手 / 视频号）" },
-        { name: "email", label: "联系邮箱", type: "email", placeholder: "用于接收广告合作邀请" },
-        { name: "followers", label: "粉丝总量", type: "text", placeholder: "输入你的当前粉丝数（例：10000）" },
-        { name: "cost", label: "单条广告报价（元）", type: "text", placeholder: "输入你期望的单条广告基础费用" },
-        { name: "commission", label: "期望分成比例（%）", type: "text", placeholder: "输入你期望的利润分成比例" },
+        { name: "name", label: isIntl ? "Nickname" : "达人昵称", type: "text", placeholder: isIntl ? "Your account name" : "输入你的账号名称" },
+        { name: "platform", label: isIntl ? "Main Platform" : "主营平台", type: "text", placeholder: isIntl ? "e.g. YouTube / TikTok / Instagram" : "选择你主要活跃的平台（抖音 / 小红书 / B 站 / 快手 / 视频号）" },
+        { name: "email", label: isIntl ? "Contact Email" : "联系邮箱", type: "email", placeholder: isIntl ? "For receiving ad cooperation invites" : "用于接收广告合作邀请" },
+        { name: "followers", label: isIntl ? "Followers" : "粉丝总量", type: "text", placeholder: isIntl ? "e.g. 10000" : "输入你的当前粉丝数（例：10000）" },
+        { name: "cost", label: isIntl ? "Ad Price (per post)" : "单条广告报价（元）", type: "text", placeholder: isIntl ? "Your base ad fee" : "输入你期望的单条广告基础费用" },
+        { name: "commission", label: isIntl ? "Commission Rate (%)" : "期望分成比例（%）", type: "text", placeholder: isIntl ? "Your expected profit share" : "输入你期望的利润分成比例" },
       ],
     },
     new_blogger: {
-      title: "新增博主账号",
+      title: isIntl ? "Add Blogger Account" : "新增博主账号",
       icon: <Plus className="h-5 w-5" />,
       gradient: "from-purple-500 to-pink-500",
       fields: [
-        { name: "name", label: "账号名称", type: "text", placeholder: "输入新账号名称" },
-        { name: "platform", label: "所属平台", type: "text", placeholder: "如：抖音、小红书等" },
-        { name: "email", label: "联系邮箱", type: "email", placeholder: "用于接收广告合作邀请" },
-        { name: "followers", label: "粉丝数量", type: "text", placeholder: "输入该账号的粉丝数" },
-        { name: "cost", label: "单条报价（元）", type: "text", placeholder: "该账号的广告报价" },
-        { name: "commission", label: "期望分成（%）", type: "text", placeholder: "期望的分成比例" },
+        { name: "name", label: isIntl ? "Account Name" : "账号名称", type: "text", placeholder: isIntl ? "Enter account name" : "输入新账号名称" },
+        { name: "platform", label: isIntl ? "Platform" : "所属平台", type: "text", placeholder: isIntl ? "e.g. YouTube, TikTok" : "如：抖音、小红书等" },
+        { name: "email", label: isIntl ? "Contact Email" : "联系邮箱", type: "email", placeholder: isIntl ? "For ad cooperation invites" : "用于接收广告合作邀请" },
+        { name: "followers", label: isIntl ? "Followers" : "粉丝数量", type: "text", placeholder: isIntl ? "Follower count" : "输入该账号的粉丝数" },
+        { name: "cost", label: isIntl ? "Ad Price" : "单条报价（元）", type: "text", placeholder: isIntl ? "Ad price for this account" : "该账号的广告报价" },
+        { name: "commission", label: isIntl ? "Commission (%)" : "期望分成（%）", type: "text", placeholder: isIntl ? "Expected commission rate" : "期望的分成比例" },
       ],
     },
     b2b_follow: {
-      title: "录入跟进的客户",
+      title: isIntl ? "Add Tracked Customer" : "录入跟进的客户",
       icon: <Building2 className="h-5 w-5" />,
       gradient: "from-blue-500 to-cyan-500",
       fields: [
-        { name: "name", label: "企业名称", type: "text", placeholder: "如：深圳XX科技公司" },
-        { name: "region", label: "所属区域", type: "text", placeholder: "如：深圳/北京" },
-        { name: "contact", label: "联系人及职务", type: "text", placeholder: "如：王总(CTO)" },
-        { name: "email", label: "联系邮箱", type: "email", placeholder: "如：wang@company.com" },
-        { name: "estValue", label: "预估客单价", type: "text", placeholder: "如：¥30,000" },
+        { name: "name", label: isIntl ? "Company Name" : "企业名称", type: "text", placeholder: isIntl ? "e.g. Acme Corp" : "如：深圳XX科技公司" },
+        { name: "region", label: isIntl ? "Region" : "所属区域", type: "text", placeholder: isIntl ? "e.g. New York / London" : "如：深圳/北京" },
+        { name: "contact", label: isIntl ? "Contact & Title" : "联系人及职务", type: "text", placeholder: isIntl ? "e.g. John (CTO)" : "如：王总(CTO)" },
+        { name: "email", label: isIntl ? "Contact Email" : "联系邮箱", type: "email", placeholder: isIntl ? "e.g. john@company.com" : "如：wang@company.com" },
+        { name: "estValue", label: isIntl ? "Est. Value" : "预估客单价", type: "text", placeholder: isIntl ? "e.g. $30,000" : "如：¥30,000" },
       ],
     },
     b2b_publish: {
-      title: "发布合作需求",
+      title: isIntl ? "Post Cooperation Demand" : "发布合作需求",
       icon: <Globe className="h-5 w-5" />,
       gradient: "from-blue-500 to-cyan-500",
       wide: true,
       fields: [
-        { name: "name", label: "需求标题", type: "text", placeholder: "如：寻找深圳地区数码产品供应商", fullWidth: true },
-        { name: "region", label: "所属区域", type: "text", placeholder: "如：深圳/北京" },
-        { name: "contact", label: "联系人及职务", type: "text", placeholder: "如：王总(CTO)" },
-        { name: "email", label: "联系邮箱", type: "email", placeholder: "如：wang@company.com" },
-        { name: "estValue", label: "预估合作价值", type: "text", placeholder: "如：¥30,000" },
-        { name: "description", label: "需求描述", type: "text", placeholder: "详细描述您的合作需求...", fullWidth: true },
+        { name: "name", label: isIntl ? "Demand Title" : "需求标题", type: "text", placeholder: isIntl ? "e.g. Looking for tech supplier in NYC" : "如：寻找深圳地区数码产品供应商", fullWidth: true },
+        { name: "region", label: isIntl ? "Region" : "所属区域", type: "text", placeholder: isIntl ? "e.g. New York" : "如：深圳/北京" },
+        { name: "contact", label: isIntl ? "Contact & Title" : "联系人及职务", type: "text", placeholder: isIntl ? "e.g. John (CTO)" : "如：王总(CTO)" },
+        { name: "email", label: isIntl ? "Contact Email" : "联系邮箱", type: "email", placeholder: isIntl ? "e.g. john@company.com" : "如：wang@company.com" },
+        { name: "estValue", label: isIntl ? "Est. Value" : "预估合作价值", type: "text", placeholder: isIntl ? "e.g. $30,000" : "如：¥30,000" },
+        { name: "description", label: isIntl ? "Description" : "需求描述", type: "text", placeholder: isIntl ? "Describe your cooperation needs..." : "详细描述您的合作需求...", fullWidth: true },
       ],
     },
     b2b: {
-      title: "手工录入企业线索",
+      title: isIntl ? "Add Enterprise Lead" : "手工录入企业线索",
       icon: <Building2 className="h-5 w-5" />,
       gradient: "from-blue-500 to-cyan-500",
       fields: [
-        { name: "name", label: "企业名称", type: "text", placeholder: "如：深圳XX科技公司" },
-        { name: "region", label: "所属区域", type: "text", placeholder: "如：深圳/北京" },
-        { name: "contact", label: "联系人及职务", type: "text", placeholder: "如：王总(CTO)" },
-        { name: "email", label: "联系邮箱", type: "email", placeholder: "如：wang@company.com" },
-        { name: "estValue", label: "预估客单价", type: "text", placeholder: "如：¥30,000" },
+        { name: "name", label: isIntl ? "Company Name" : "企业名称", type: "text", placeholder: isIntl ? "e.g. Acme Corp" : "如：深圳XX科技公司" },
+        { name: "region", label: isIntl ? "Region" : "所属区域", type: "text", placeholder: isIntl ? "e.g. New York" : "如：深圳/北京" },
+        { name: "contact", label: isIntl ? "Contact & Title" : "联系人及职务", type: "text", placeholder: isIntl ? "e.g. John (CTO)" : "如：王总(CTO)" },
+        { name: "email", label: isIntl ? "Contact Email" : "联系邮箱", type: "email", placeholder: isIntl ? "e.g. john@company.com" : "如：wang@company.com" },
+        { name: "estValue", label: isIntl ? "Est. Value" : "预估客单价", type: "text", placeholder: isIntl ? "e.g. $30,000" : "如：¥30,000" },
       ],
     },
     vc: {
-      title: "添加投资机构线索",
+      title: isIntl ? "Add VC Lead" : "添加投资机构线索",
       icon: <Landmark className="h-5 w-5" />,
       gradient: "from-emerald-500 to-teal-500",
       fields: [
-        { name: "name", label: "机构名称", type: "text", placeholder: "如：高瓴创投" },
-        { name: "region", label: "区域", type: "text", placeholder: "如：北京" },
-        { name: "contact", label: "联系人", type: "text", placeholder: "如：李经理" },
-        { name: "email", label: "联系邮箱", type: "email", placeholder: "如：li@fund.com" },
-        { name: "focus", label: "关注领域", type: "text", placeholder: "如：AI/SaaS" },
+        { name: "name", label: isIntl ? "Institution Name" : "机构名称", type: "text", placeholder: isIntl ? "e.g. Sequoia Capital" : "如：高瓴创投" },
+        { name: "region", label: isIntl ? "Region" : "区域", type: "text", placeholder: isIntl ? "e.g. San Francisco" : "如：北京" },
+        { name: "contact", label: isIntl ? "Contact" : "联系人", type: "text", placeholder: isIntl ? "e.g. Sarah" : "如：李经理" },
+        { name: "email", label: isIntl ? "Contact Email" : "联系邮箱", type: "email", placeholder: isIntl ? "e.g. sarah@fund.com" : "如：li@fund.com" },
+        { name: "focus", label: isIntl ? "Investment Focus" : "关注领域", type: "text", placeholder: isIntl ? "e.g. AI / SaaS" : "如：AI/SaaS" },
       ],
     },
     vc_follow: {
-      title: "录入 VC 机构",
+      title: isIntl ? "Add VC Institution" : "录入 VC 机构",
       icon: <Landmark className="h-5 w-5" />,
       gradient: "from-emerald-500 to-teal-500",
       fields: [
-        { name: "name", label: "机构名称", type: "text", placeholder: "如：高瓴创投" },
-        { name: "region", label: "区域", type: "text", placeholder: "如：北京" },
-        { name: "contact", label: "联系人", type: "text", placeholder: "如：李经理" },
-        { name: "email", label: "联系邮箱", type: "email", placeholder: "如：li@fund.com" },
-        { name: "focus", label: "关注领域", type: "text", placeholder: "如：AI/SaaS" },
+        { name: "name", label: isIntl ? "Institution Name" : "机构名称", type: "text", placeholder: isIntl ? "e.g. Sequoia Capital" : "如：高瓴创投" },
+        { name: "region", label: isIntl ? "Region" : "区域", type: "text", placeholder: isIntl ? "e.g. San Francisco" : "如：北京" },
+        { name: "contact", label: isIntl ? "Contact" : "联系人", type: "text", placeholder: isIntl ? "e.g. Sarah" : "如：李经理" },
+        { name: "email", label: isIntl ? "Contact Email" : "联系邮箱", type: "email", placeholder: isIntl ? "e.g. sarah@fund.com" : "如：li@fund.com" },
+        { name: "focus", label: isIntl ? "Investment Focus" : "关注领域", type: "text", placeholder: isIntl ? "e.g. AI / SaaS" : "如：AI/SaaS" },
       ],
     },
     vc_publish: {
-      title: "发布融资需求",
+      title: isIntl ? "Post Funding Demand" : "发布融资需求",
       icon: <TrendingUp className="h-5 w-5" />,
       gradient: "from-emerald-500 to-teal-500",
       wide: true,
       fields: [
-        { name: "name", label: "企业名称", type: "text", placeholder: "如：我的科技公司", fullWidth: true },
-        { name: "region", label: "区域", type: "text", placeholder: "如：北京" },
-        { name: "contact", label: "联系人", type: "text", placeholder: "如：张总" },
-        { name: "email", label: "联系邮箱", type: "email", placeholder: "如：zhang@company.com" },
-        { name: "focus", label: "行业领域", type: "text", placeholder: "如：AI/SaaS" },
-        { name: "fundingAmount", label: "融资金额", type: "text", placeholder: "如：1000万" },
-        { name: "fundingStage", label: "融资阶段", type: "text", placeholder: "如：Pre-A轮" },
-        { name: "description", label: "需求描述", type: "text", placeholder: "详细描述融资需求...", fullWidth: true },
+        { name: "name", label: isIntl ? "Company Name" : "企业名称", type: "text", placeholder: isIntl ? "e.g. My Tech Co." : "如：我的科技公司", fullWidth: true },
+        { name: "region", label: isIntl ? "Region" : "区域", type: "text", placeholder: isIntl ? "e.g. San Francisco" : "如：北京" },
+        { name: "contact", label: isIntl ? "Contact" : "联系人", type: "text", placeholder: isIntl ? "e.g. CEO" : "如：张总" },
+        { name: "email", label: isIntl ? "Contact Email" : "联系邮箱", type: "email", placeholder: isIntl ? "e.g. ceo@company.com" : "如：zhang@company.com" },
+        { name: "focus", label: isIntl ? "Industry" : "行业领域", type: "text", placeholder: isIntl ? "e.g. AI / SaaS" : "如：AI/SaaS" },
+        { name: "fundingAmount", label: isIntl ? "Funding Amount" : "融资金额", type: "text", placeholder: isIntl ? "e.g. $1M" : "如：1000万" },
+        { name: "fundingStage", label: isIntl ? "Funding Stage" : "融资阶段", type: "text", placeholder: isIntl ? "e.g. Pre-A" : "如：Pre-A轮" },
+        { name: "description", label: isIntl ? "Description" : "需求描述", type: "text", placeholder: isIntl ? "Describe your funding needs..." : "详细描述融资需求...", fullWidth: true },
       ],
     },
     ad: {
-      title: "发布新广告位",
+      title: isIntl ? "Post New Ad" : "发布新广告位",
       icon: <PlaySquare className="h-5 w-5" />,
       gradient: "from-blue-500 to-cyan-500",
       fields: [
-        { name: "brand", label: "广告品牌", type: "text", placeholder: "如：某出行App" },
-        { name: "type", label: "广告类型", type: "select", options: ["视频广告", "互动广告", "横幅图片"] },
-        { name: "duration", label: "要求时长", type: "text", placeholder: "如：30s" },
-        { name: "reward", label: "奖励金额", type: "text", placeholder: "如：0.5 RMB" },
-        { name: "videoUrl", label: "视频链接（可选）", type: "text", placeholder: "粘贴视频直链 URL，如 https://..." },
+        { name: "brand", label: isIntl ? "Brand Name" : "广告品牌", type: "text", placeholder: isIntl ? "e.g. My App" : "如：某出行App" },
+        { name: "type", label: isIntl ? "Ad Type" : "广告类型", type: "select", options: isIntl ? ["Video Ad", "Interactive Ad", "Banner Image"] : ["视频广告", "互动广告", "横幅图片"] },
+        { name: "duration", label: isIntl ? "Required Duration" : "要求时长", type: "text", placeholder: isIntl ? "e.g. 30s" : "如：30s" },
+        { name: "reward", label: isIntl ? "Reward Amount" : "奖励金额", type: "text", placeholder: isIntl ? "e.g. 0.5 USD" : "如：0.5 RMB" },
+        { name: "videoUrl", label: isIntl ? "Video (optional)" : "视频链接（可选）", type: "video", placeholder: isIntl ? "Paste MP4 URL or upload" : "粘贴视频直链 URL，如 https://..." },
       ],
     },
     influencer: {
-      title: "达人认证申请",
+      title: isIntl ? "Influencer Verification" : "达人认证申请",
       icon: <Award className="h-5 w-5" />,
       gradient: "from-purple-500 to-pink-500",
       wide: true,
       fields: [
-        { name: "platform", label: "主营平台", type: "text", placeholder: "如：抖音 / 小红书 / B站 / 快手" },
-        { name: "platformAccount", label: "平台账号", type: "text", placeholder: "输入您的平台账号名" },
-        { name: "platformHomeUrl", label: "主页链接", type: "text", placeholder: "输入您的主页链接（可选）", fullWidth: true },
-        { name: "followers", label: "粉丝总量", type: "text", placeholder: "如：10000" },
-        { name: "cost", label: "单条广告报价（元）", type: "text", placeholder: "如：1000" },
-        { name: "commission", label: "期望分成比例（%）", type: "text", placeholder: "如：20", fullWidth: true },
+        { name: "platform", label: isIntl ? "Main Platform" : "主营平台", type: "text", placeholder: isIntl ? "e.g. YouTube / Instagram / TikTok" : "如：抖音 / 小红书 / B站 / 快手" },
+        { name: "platformAccount", label: isIntl ? "Account Name" : "平台账号", type: "text", placeholder: isIntl ? "Your account username" : "输入您的平台账号名" },
+        { name: "platformHomeUrl", label: isIntl ? "Profile URL" : "主页链接", type: "text", placeholder: isIntl ? "Your profile link (optional)" : "输入您的主页链接（可选）", fullWidth: true },
+        { name: "followers", label: isIntl ? "Followers" : "粉丝总量", type: "text", placeholder: isIntl ? "e.g. 10000" : "如：10000" },
+        { name: "cost", label: isIntl ? "Ad Price (per post)" : "单条广告报价（元）", type: "text", placeholder: isIntl ? "e.g. 100" : "如：1000" },
+        { name: "commission", label: isIntl ? "Commission Rate (%)" : "期望分成比例（%）", type: "text", placeholder: isIntl ? "e.g. 20" : "如：20", fullWidth: true },
       ],
     },
     merchant: {
-      title: "商家认证申请",
+      title: isIntl ? "Merchant Verification" : "商家认证申请",
       icon: <Building2 className="h-5 w-5" />,
       gradient: "from-emerald-500 to-teal-500",
       wide: true,
       fields: [
-        { name: "companyName", label: "公司名称", type: "text", placeholder: "输入您的公司全称", fullWidth: true },
-        { name: "creditCode", label: "统一社会信用代码", type: "text", placeholder: "输入18位统一社会信用代码", fullWidth: true },
-        { name: "businessLicenseUrl", label: "营业执照链接", type: "text", placeholder: "上传营业执照后的链接（可选）", fullWidth: true },
-        { name: "brandName", label: "品牌名称", type: "text", placeholder: "输入您的品牌名称" },
-        { name: "contactPerson", label: "联系人", type: "text", placeholder: "输入联系人姓名" },
-        { name: "contactPhone", label: "联系电话", type: "text", placeholder: "输入联系电话" },
-        { name: "industry", label: "所属行业", type: "text", placeholder: "如：美妆 / 食品 / 数码" },
+        { name: "companyName", label: isIntl ? "Company Name" : "公司名称", type: "text", placeholder: isIntl ? "Your company full name" : "输入您的公司全称", fullWidth: true },
+        { name: "creditCode", label: isIntl ? "Business Reg. No." : "统一社会信用代码", type: "text", placeholder: isIntl ? "Business registration number" : "输入18位统一社会信用代码", fullWidth: true },
+        { name: "businessLicenseUrl", label: isIntl ? "License URL (optional)" : "营业执照链接", type: "text", placeholder: isIntl ? "Upload license and paste URL" : "上传营业执照后的链接（可选）", fullWidth: true },
+        { name: "brandName", label: isIntl ? "Brand Name" : "品牌名称", type: "text", placeholder: isIntl ? "Your brand name" : "输入您的品牌名称" },
+        { name: "contactPerson", label: isIntl ? "Contact Person" : "联系人", type: "text", placeholder: isIntl ? "Contact name" : "输入联系人姓名" },
+        { name: "contactPhone", label: isIntl ? "Contact Phone" : "联系电话", type: "text", placeholder: isIntl ? "Contact phone number" : "输入联系电话" },
+        { name: "industry", label: isIntl ? "Industry" : "所属行业", type: "text", placeholder: isIntl ? "e.g. Beauty / Food / Tech" : "如：美妆 / 食品 / 数码" },
       ],
     },
   }
@@ -2288,8 +2353,8 @@ function AddFormModal({ type, onClose, onSubmit, initialData }: {
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-blue-300 bg-blue-50/50 text-blue-600 text-sm font-medium hover:bg-blue-50 hover:border-blue-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {videoUploading
-                          ? <><Loader2 size={14} className="animate-spin" /> 上传中...</>
-                          : <><PlaySquare size={14} /> 选择 MP4 视频</>
+                          ? <><Loader2 size={14} className="animate-spin" /> {isIntl ? "Uploading..." : "上传中..."}</>
+                          : <><PlaySquare size={14} /> {isIntl ? "Select MP4 Video" : "选择 MP4 视频"}</>
                         }
                       </button>
                       {videoUploadProgress && (
@@ -2299,12 +2364,11 @@ function AddFormModal({ type, onClose, onSubmit, initialData }: {
                       )}
                     </div>
                     {formData.videoUrl && (
-                      <p className="text-[11px] text-slate-400 truncate">已选: {formData.videoUrl.split("/").pop()}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{isIntl ? "Selected:" : "已选:"} {formData.videoUrl.split("/").pop()}</p>
                     )}
-                    {/* 也允许手动粘贴 URL */}
                     <Input
                       type="text"
-                      placeholder="或直接粘贴视频直链 URL"
+                      placeholder={isIntl ? "Or paste video URL directly" : "或直接粘贴视频直链 URL"}
                       value={formData[field.name] || ""}
                       onChange={(e) => handleChange(field.name, e.target.value)}
                       className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-xs placeholder:text-slate-400"
@@ -2333,7 +2397,7 @@ function AddFormModal({ type, onClose, onSubmit, initialData }: {
                   className="h-4 w-4 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer"
                 />
                 <Label htmlFor="publishToPool" className="text-sm text-slate-500 font-medium cursor-pointer select-none">
-                  同时发布到线索池，让其他用户可见
+                  {isIntl ? "Also publish to leads pool for other users to see" : "同时发布到线索池，让其他用户可见"}
                 </Label>
               </div>
             )}
@@ -2346,13 +2410,13 @@ function AddFormModal({ type, onClose, onSubmit, initialData }: {
               onClick={onClose}
               className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 transition-all"
             >
-              取消
+              {t("cancel")}
             </button>
             <button 
               type="submit"
               className={`px-8 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-r ${config.gradient}`}
             >
-              {(type === 'blogger' || type === 'new_blogger') ? '提交资料' : '确认保存'}
+              {(type === 'blogger' || type === 'new_blogger') ? t("submit") : t("confirm")}
             </button>
           </div>
         </form>
@@ -2434,14 +2498,14 @@ function StatusSelectModal({ title, currentStatus, statuses, onClose, onConfirm 
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 transition-all"
           >
-            取消
+            {t("cancel")}
           </button>
           <button 
             onClick={() => onConfirm(selected)} 
             disabled={selected === currentStatus}
             className="px-8 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-r from-blue-600 to-blue-500 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none disabled:cursor-not-allowed"
           >
-            确认更新
+            {t("confirm_update")}
           </button>
         </div>
       </div>

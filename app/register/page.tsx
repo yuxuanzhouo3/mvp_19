@@ -16,6 +16,12 @@ export default function RegisterPage() {
   const isZh = (process.env.NEXT_PUBLIC_SITE_REGION ?? "auto").toLowerCase() === "cn"
   const router = useRouter()
 
+  // 读取邀请码（从 URL ?ref= 参数）
+  const [refCode] = useState(() => {
+    if (typeof window === "undefined") return ""
+    return new URLSearchParams(window.location.search).get("ref") || ""
+  })
+
   return (
     <div className="min-h-screen bg-gradient-hero relative overflow-hidden">
       {/* Decorative background elements */}
@@ -118,7 +124,7 @@ export default function RegisterPage() {
                     const res = await fetch("/api/auth/register", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ email, password }),
+                      body: JSON.stringify({ email, password, referralCode: refCode || undefined }),
                     })
                     const data = (await res.json()) as { message?: string; ok: boolean }
 

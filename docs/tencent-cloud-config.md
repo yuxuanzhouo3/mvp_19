@@ -13,9 +13,14 @@
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `_id` / `id` | string | 主键（CloudBase 自动生成 `_id`） |
-| `email` | string | 登录邮箱，唯一 |
-| `password` | string | 明文密码 |
+| `email` | string | 登录邮箱，唯一（第三方登录用占位邮箱） |
+| `password` | string | 密码（第三方登录用 `google_xxx` / `wechat_xxx` 占位） |
 | `role` | string | 角色：`user` / `admin` |
+| `provider` | string | 登录方式：`email`（默认）/ `google` / `wechat` |
+| `googleId` | string | Google 用户唯一 ID（`sub` 字段，仅 Google 登录） |
+| `wechatId` | string | 微信唯一 ID（优先 `unionid`，无则用 `openid`，仅微信登录） |
+| `openid` | string | 微信 openid（仅微信登录） |
+| `unionid` | string | 微信 unionid（仅微信登录，跨应用唯一） |
 | `created_at` | datetime | 创建时间 |
 | `updated_at` | datetime | 更新时间 |
 

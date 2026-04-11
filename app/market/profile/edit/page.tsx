@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Save, User, Phone, Lock, Eye, EyeOff, Sparkles, CheckCircle } from "lucide-react"
+import { t } from "@/lib/market/i18n"
 
 export default function ProfileEditPage() {
   const router = useRouter()
@@ -104,7 +105,7 @@ export default function ProfileEditPage() {
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-        <p className="text-sm text-slate-400">加载中...</p>
+        <p className="text-sm text-slate-400">{t("loading")}</p>
       </div>
     </div>
   )
@@ -122,13 +123,13 @@ export default function ProfileEditPage() {
       <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-white/30 shadow-sm">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors group">
-            <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" /> 返回
+            <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" /> {t("back")}
           </button>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-lg flex items-center justify-center">
               <Sparkles size={12} className="text-white" />
             </div>
-            <span className="font-semibold text-slate-800 text-sm">编辑资料</span>
+            <span className="font-semibold text-slate-800 text-sm">{t("edit_profile_title")}</span>
           </div>
           <div className="w-16" />
         </div>
@@ -152,7 +153,7 @@ export default function ProfileEditPage() {
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                 <User size={13} className="text-white" />
               </div>
-              <span className="text-sm font-semibold text-slate-700">基本信息</span>
+              <span className="text-sm font-semibold text-slate-700">{t("basic_info")}</span>
             </div>
             <div className="px-5 pb-5 space-y-4">
               <div className="space-y-1.5">
@@ -185,7 +186,7 @@ export default function ProfileEditPage() {
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <Lock size={13} className="text-white" />
               </div>
-              <span className="text-sm font-semibold text-slate-700">修改密码</span>
+              <span className="text-sm font-semibold text-slate-700">{t("change_password")}</span>
               <span className="text-xs text-slate-400 ml-1">（不修改可留空）</span>
             </div>
             <div className="px-5 pb-5 space-y-4">
@@ -223,7 +224,7 @@ export default function ProfileEditPage() {
               onClick={() => router.push("/market/profile")}
               className="flex-1 h-12 rounded-full border border-slate-200 bg-white/70 text-slate-500 text-sm font-medium hover:bg-white transition-colors"
             >
-              取消
+              {t("cancel")}
             </button>
             <button
               type="submit"
@@ -231,8 +232,8 @@ export default function ProfileEditPage() {
               className="flex-1 h-12 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 text-white text-sm font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
             >
               {saving
-                ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> 保存中...</>
-                : <><Save size={15} /> 保存更改</>
+                ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> {t("saving")}</>
+                : <><Save size={15} /> {t("save_changes")}</>
               }
             </button>
           </div>

@@ -7,6 +7,7 @@ import {
   Gift, CreditCard, PlusCircle, RefreshCw, Wallet,
   Filter
 } from "lucide-react"
+import { t } from "@/lib/market/i18n"
 
 interface Transaction {
   _id?: string
@@ -104,13 +105,13 @@ export default function TransactionsPage() {
             className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors group"
           >
             <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-            返回
+            {t("back")}
           </button>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-lg flex items-center justify-center">
               <Sparkles size={12} className="text-white" />
             </div>
-            <span className="font-semibold text-slate-800 text-sm">账单明细</span>
+            <span className="font-semibold text-slate-800 text-sm">{t("transactions_title")}</span>
           </div>
           <div className="w-16" />
         </div>
@@ -178,7 +179,7 @@ export default function TransactionsPage() {
             <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center">
               <Filter size={28} className="text-blue-300" />
             </div>
-            <p className="text-slate-500 font-medium">暂无流水记录</p>
+            <p className="text-slate-500 font-medium">{t("no_tasks")}</p>
             <p className="text-slate-400 text-sm">完成任务、充值或提现后将显示在这里</p>
           </div>
         ) : (

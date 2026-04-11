@@ -6,6 +6,7 @@ import {
   ArrowLeft, Handshake, Inbox, Send, CheckCircle, XCircle,
   Clock, Building2, Mail, Phone, Loader2, User, Sparkles,
 } from "lucide-react"
+import { t } from "@/lib/market/i18n"
 
 interface CooperationApplication {
   id: string
@@ -88,17 +89,17 @@ function groupApplications(apps: CooperationApplication[]): AppGroup[] {
 function StatusPill({ status }: { status: string }) {
   if (status === "approved") return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
-      <CheckCircle size={10} /> 已同意
+      <CheckCircle size={10} /> {t("approved")}
     </span>
   )
   if (status === "rejected") return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-100 text-red-600 border border-red-200">
-      <XCircle size={10} /> 已拒绝
+      <XCircle size={10} /> {t("rejected")}
     </span>
   )
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-      <Clock size={10} /> 待处理
+      <Clock size={10} /> {t("pending")}
     </span>
   )
 }
@@ -182,7 +183,7 @@ export default function MyApplicationsPage() {
   const LoadingState = () => (
     <div className="flex flex-col items-center justify-center py-20 gap-3">
       <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-      <p className="text-sm text-slate-400">加载中...</p>
+      <p className="text-sm text-slate-400">{t("loading")}</p>
     </div>
   )
 
@@ -258,7 +259,7 @@ export default function MyApplicationsPage() {
         {/* A 已同意：合作信息只读 */}
         {!isReceived && group.mergedStatus === "approved" && (
           <div className="rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 px-3 py-2.5 space-y-1">
-            <p className="text-xs font-semibold text-blue-700 mb-1">合作已建立 · 对方负责跟进</p>
+            <p className="text-xs font-semibold text-blue-700 mb-1">{t("coop_established")}</p>
             {group.applicantContact && (
               <div className="flex items-center gap-1.5 text-xs text-slate-500">
                 <Phone size={10} className="text-blue-400" /> {group.applicantContact}
@@ -280,7 +281,7 @@ export default function MyApplicationsPage() {
         )}
 
         <p className="text-[11px] text-slate-400">
-          申请时间：{new Date(group.createdAt).toLocaleString("zh-CN")}
+          {t("apply_time")}{new Date(group.createdAt).toLocaleString("zh-CN")}
         </p>
 
         {/* B 待处理：操作按钮 */}
@@ -323,13 +324,13 @@ export default function MyApplicationsPage() {
       <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-white/30 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors group">
-            <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" /> 返回
+            <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" /> {t("back")}
           </button>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-lg flex items-center justify-center">
               <Sparkles size={12} className="text-white" />
             </div>
-            <span className="font-semibold text-slate-800 text-sm">合作申请管理</span>
+            <span className="font-semibold text-slate-800 text-sm">{t("coop_mgmt")}</span>
           </div>
           <button onClick={() => router.push("/market/leads-pool")} className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
             <Building2 size={15} /> 线索池
@@ -340,8 +341,8 @@ export default function MyApplicationsPage() {
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-6">
         <div className="flex gap-2 p-1.5 rounded-2xl mb-6 w-fit" style={glassCard}>
           {([
-            { key: "received", Icon: Inbox, label: "收到的申请", badge: pendingCount },
-            { key: "sent", Icon: Send, label: "我发起的申请", badge: 0 },
+            { key: "received", Icon: Inbox, label: t("received"), badge: pendingCount },
+            { key: "sent", Icon: Send, label: t("sent"), badge: 0 },
           ] as const).map(({ key, Icon, label, badge }) => (
             <button
               key={key}
@@ -365,7 +366,7 @@ export default function MyApplicationsPage() {
 
         {loading ? <LoadingState /> : activeTab === "received" ? (
           receivedGroups.length === 0 ? (
-            <EmptyState icon={Inbox} title="暂无收到的申请" sub="当其他用户对您的线索发起申请时，将显示在这里" btnLabel="去发布线索" btnHref="/market/acquisition?mode=merchant" />
+            <EmptyState icon={Inbox} title={t("no_received")} sub={t("no_received_sub")} btnLabel={t("go_publish_leads")} btnHref="/market/acquisition?mode=merchant" />
           ) : (
             <div className="space-y-3">
               {receivedGroups.map(g => <GroupCard key={g.key} group={g} isReceived={true} />)}
@@ -392,7 +393,7 @@ export default function MyApplicationsPage() {
           }}>
             <div className={`px-6 py-5 ${actionType === "approve" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : "bg-gradient-to-r from-red-500 to-rose-500"}`}>
               <h3 className="text-lg font-bold text-white">
-                {actionType === "approve" ? "确认同意合作？" : "确认拒绝申请？"}
+                {actionType === "approve" ? t("confirm_agree") + "？" : t("confirm_reject") + "？"}
               </h3>
               <p className="text-white/70 text-xs mt-1">
                 {actionType === "approve"
@@ -402,7 +403,7 @@ export default function MyApplicationsPage() {
             </div>
             <div className="p-6 flex gap-3">
               <button onClick={() => { setSelectedGroup(null); setActionType(null) }} className="flex-1 h-11 rounded-full border border-slate-200 text-slate-500 text-sm font-medium hover:bg-slate-50 transition-colors">
-                取消
+                {t("cancel")}
               </button>
               <button
                 onClick={handleUpdateStatus}
@@ -410,7 +411,7 @@ export default function MyApplicationsPage() {
                 className={`flex-1 h-11 rounded-full text-white text-sm font-semibold shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${actionType === "approve" ? "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-500/30" : "bg-gradient-to-r from-red-500 to-rose-500 shadow-red-500/30"}`}
               >
                 {processing ? <Loader2 size={15} className="animate-spin" /> : actionType === "approve" ? <CheckCircle size={15} /> : <XCircle size={15} />}
-                {actionType === "approve" ? "确认同意" : "确认拒绝"}
+                {actionType === "approve" ? t("confirm_agree") : t("confirm_reject")}
               </button>
             </div>
           </div>

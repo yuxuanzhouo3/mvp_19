@@ -6,6 +6,7 @@ import {
   ArrowLeft, CheckCircle, Sparkles, Clock, Gift,
   TrendingUp, Wallet, PlaySquare
 } from "lucide-react"
+import { t } from "@/lib/market/i18n"
 
 interface TaskItem {
   id: string
@@ -69,13 +70,13 @@ export default function MyTasksPage() {
             className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors group"
           >
             <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-            返回
+            {t("back")}
           </button>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-lg flex items-center justify-center">
               <Sparkles size={12} className="text-white" />
             </div>
-            <span className="font-semibold text-slate-800 text-sm">已完成的任务</span>
+            <span className="font-semibold text-slate-800 text-sm">{t("task_completed")}</span>
           </div>
           <div className="w-16" />
         </div>
@@ -111,7 +112,7 @@ export default function MyTasksPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-            <p className="text-sm text-slate-400">加载中...</p>
+            <p className="text-sm text-slate-400">{t("loading")}</p>
           </div>
         ) : tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -119,7 +120,7 @@ export default function MyTasksPage() {
               <PlaySquare size={32} className="text-blue-300" />
             </div>
             <div className="text-center">
-              <p className="font-semibold text-slate-600">暂无完成的任务</p>
+              <p className="font-semibold text-slate-600">{t("no_tasks")}</p>
               <p className="text-sm text-slate-400 mt-1">去广告广场观看广告，完成后奖励自动到账</p>
             </div>
             <button
