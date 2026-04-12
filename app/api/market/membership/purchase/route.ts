@@ -13,6 +13,21 @@ async function getSupabase() {
 }
 
 async function grantQuota(userId: string, aiQuota: number) {
+  const { isCN } = await import("@/lib/db-adapter")
+  if (isCN()) {
+    const cb = await import("@cloudbase/node-sdk")
+    const app = cb.init({ env: process.env.CLOUDBASE_ENV_ID!, secretId: process.env.CLOUDBASE_SECRET_ID!, secretKey: process.env.CLOUDBASE_SECRET_KEY! })
+    const db = app.database()
+    const r = await db.collection("ai_search_quota").where({ user_id: userId }).get()
+    const quota = r?.data?.[0]
+    const newBalance = parseFloat(((quota?.balance || 0) + aiQuota).toFixed(4))
+    if (quota?._id) {
+      await db.collection("ai_search_quota").doc(quota._id).update({ balance: newBalance, updated_at: new Date().toISOString() })
+    } else {
+      await db.collection("ai_search_quota").add({ id: `quota-${randomUUID().slice(0,8)}`, user_id: userId, balance: newBalance, total_used: 0, call_count: 0, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    }
+    return newBalance
+  }
   const sb = await getSupabase()
   const { data: quota } = await sb.from("ai_search_quota").select("*").eq("user_id", userId).maybeSingle()
   const newBalance = parseFloat(((quota?.balance || 0) + aiQuota).toFixed(4))
@@ -36,24 +51,50 @@ export async function POST(req: NextRequest) {
   if (!planId) return NextResponse.json({ ok: false, message: "请选择套餐" }, { status: 400 })
 
   try {
-    const sb = await getSupabase()
+    const { isCN } = await import("@/lib/db-adapter")
 
-    // 查套餐
-    const { data: plan, error: planErr } = await sb.from("membership_plans").select("*").eq("id", planId).single()
-    if (planErr || !plan) return NextResponse.json({ ok: false, message: "套餐不存在" }, { status: 404 })
+    // 查套餐（国内/国外分别查）
+    let plan: any = null
+    if (isCN()) {
+      const cb = await import("@cloudbase/node-sdk")
+      const app = cb.init({ env: process.env.CLOUDBASE_ENV_ID!, secretId: process.env.CLOUDBASE_SECRET_ID!, secretKey: process.env.CLOUDBASE_SECRET_KEY! })
+      const db = app.database()
+      const r = await db.collection("membership_plans").where({ id: planId }).get()
+      plan = r?.data?.[0] || null
+    } else {
+      const sb = await getSupabase()
+      const { data, error: planErr } = await sb.from("membership_plans").select("*").eq("id", planId).single()
+      if (!planErr) plan = data
+    }
+    if (!plan) return NextResponse.json({ ok: false, message: "套餐不存在" }, { status: 404 })
 
     let finalPrice = parseFloat(plan.final_price)
     let usedCode: string | null = null
 
-    // 验证折扣码
+    // 验证折扣码（国内/国外分别查）
     if (discountCode?.trim()) {
-      const { data: dc } = await sb.from("discount_codes")
-        .select("*").eq("code", discountCode.trim().toUpperCase()).maybeSingle()
-      if (dc && dc.used_count < dc.max_uses && (!dc.expires_at || new Date(dc.expires_at) > new Date())) {
-        finalPrice = parseFloat((finalPrice * dc.discount).toFixed(2))
-        usedCode = dc.code
-        // 折扣码使用次数+1
-        await sb.from("discount_codes").update({ used_count: (dc.used_count || 0) + 1 }).eq("code", dc.code)
+      const upperCode = discountCode.trim().toUpperCase()
+      let dc: any = null
+      if (isCN()) {
+        const cb = await import("@cloudbase/node-sdk")
+        const app = cb.init({ env: process.env.CLOUDBASE_ENV_ID!, secretId: process.env.CLOUDBASE_SECRET_ID!, secretKey: process.env.CLOUDBASE_SECRET_KEY! })
+        const db = app.database()
+        const r = await db.collection("discount_codes").where({ code: upperCode }).get()
+        dc = r?.data?.[0] || null
+        if (dc && (dc.used_count || 0) < (dc.max_uses || 1) && (!dc.expires_at || new Date(dc.expires_at) > new Date())) {
+          finalPrice = parseFloat((finalPrice * dc.discount).toFixed(2))
+          usedCode = dc.code
+          await db.collection("discount_codes").where({ code: upperCode }).update({ used_count: (dc.used_count || 0) + 1 })
+        }
+      } else {
+        const sb = await getSupabase()
+        const { data } = await sb.from("discount_codes").select("*").eq("code", upperCode).maybeSingle()
+        dc = data
+        if (dc && dc.used_count < dc.max_uses && (!dc.expires_at || new Date(dc.expires_at) > new Date())) {
+          finalPrice = parseFloat((finalPrice * dc.discount).toFixed(2))
+          usedCode = dc.code
+          await sb.from("discount_codes").update({ used_count: (dc.used_count || 0) + 1 }).eq("code", dc.code)
+        }
       }
     }
 

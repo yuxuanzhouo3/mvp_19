@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "issue_discount") {
-      const { createClient } = await import("@supabase/supabase-js")
       const { randomUUID } = await import("crypto")
       const { isCN } = await import("@/lib/db-adapter")
       const inviterUserId = String(body.inviterUserId || "")
@@ -83,7 +82,6 @@ export async function POST(req: NextRequest) {
       if (!inviterUserId || isNaN(discount) || discount <= 0 || discount >= 1) {
         return NextResponse.json({ success: false, error: "参数无效" }, { status: 400 })
       }
-      // 生成折扣码：INVITE + 随机6位大写
       const code = `INVITE${randomUUID().slice(0,6).toUpperCase()}`
       const now = new Date().toISOString()
       const row = {
@@ -99,15 +97,36 @@ export async function POST(req: NextRequest) {
         created_at: now,
         updated_at: now,
       }
-      if (!isCN()) {
-        const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-        const { error } = await sb.from("referral_discount_codes").insert(row)
-        if (error) throw new Error(error.message)
-        // 同步写入 discount_codes 表（会员购买折扣码复用）
-        await sb.from("discount_codes").upsert({
+
+      if (isCN()) {
+        // 国内版：写入 CloudBase
+        const cb = await import("@cloudbase/node-sdk")
+        const app = cb.init({
+          env: process.env.CLOUDBASE_ENV_ID!,
+          secretId: process.env.CLOUDBASE_SECRET_ID!,
+          secretKey: process.env.CLOUDBASE_SECRET_KEY!,
+        })
+        const db = app.database()
+        await db.collection("referral_discount_codes").add(row)
+        // 同步写入 discount_codes 集合（会员购买折扣码复用）
+        await db.collection("discount_codes").add({
           id: `dc-ref-${randomUUID().slice(0,8)}`,
           code,
           discount,
+          max_uses: parseInt(body.maxUses) || 1,
+          used_count: 0,
+          expires_at: body.expiresAt || null,
+          created_at: now,
+        })
+      } else {
+        // 国际版：写入 Supabase
+        const { createClient } = await import("@supabase/supabase-js")
+        const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+        const { error } = await sb.from("referral_discount_codes").insert(row)
+        if (error) throw new Error(error.message)
+        await sb.from("discount_codes").upsert({
+          id: `dc-ref-${randomUUID().slice(0,8)}`,
+          code, discount,
           max_uses: parseInt(body.maxUses) || 1,
           used_count: 0,
           expires_at: body.expiresAt || "2099-12-31 23:59:59",

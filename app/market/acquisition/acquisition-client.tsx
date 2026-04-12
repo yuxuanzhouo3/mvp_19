@@ -64,7 +64,7 @@ function StatusBadge({ status }: { status: string }) {
 function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -197,7 +197,7 @@ function TaskModeView({ ads, profile, participations, onParticipate, onComplete 
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {/* Balance Card */}
         <div 
           className="relative rounded-2xl p-5 flex items-center space-x-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
@@ -1875,8 +1875,8 @@ export function AcquisitionClient() {
         User from localStorage: {localStorage.getItem('market_user') || 'none'}
       </div>
       {/* Unified Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 space-y-4 md:space-y-0">
-        <div>
+      <header className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
+        <div className="hidden md:block">
           <h1 className="text-3xl font-bold flex items-center tracking-tight">
             <span className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white p-2 rounded-xl mr-3 shadow-lg shadow-blue-500/25">
               <Target size={28} />
@@ -1889,7 +1889,7 @@ export function AcquisitionClient() {
         </div>
         
         {/* Mode Switch Buttons */}
-        <div className="flex items-center space-x-2 p-1.5 rounded-2xl bg-white/60 backdrop-blur-sm border border-slate-200/60 shadow-sm">
+        <div className="flex items-center space-x-1 p-1 rounded-2xl bg-white/60 backdrop-blur-sm border border-slate-200/60 shadow-sm w-full md:w-auto">
           {[
             { mode: 'task' as ViewMode, label: t("task_mode"), gradient: 'from-blue-500 to-cyan-500' },
             { mode: 'influencer' as ViewMode, label: t("influencer_mode"), gradient: 'from-purple-500 to-pink-500' },
@@ -1898,7 +1898,7 @@ export function AcquisitionClient() {
             <button
               key={mode}
               onClick={() => handleModeChange(mode)}
-              className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 overflow-hidden
+              className={`relative flex-1 md:flex-none px-3 py-2 rounded-xl text-xs md:text-sm font-medium transition-all duration-300 overflow-hidden
                 ${viewMode === mode 
                   ? 'text-white shadow-lg' 
                   : 'text-slate-600 hover:text-slate-800 hover:bg-white/80'
@@ -1951,11 +1951,8 @@ export function AcquisitionClient() {
                   })(),
                   avatar: profile?.avatar,
                   email: (() => {
-                    // 优先使用 localStorage 中的 email
                     if (storedUser?.email) return storedUser.email;
-                    // 其次使用 profile.email
                     if (profile?.email) return profile.email;
-                    // 最后返回空字符串，不显示ID
                     return '';
                   })()
                 }}
@@ -2288,11 +2285,11 @@ function AddFormModal({ type, onClose, onSubmit, initialData }: {
   return (
     <ModalOverlay onClose={onClose}>
       <div 
-        className={`w-full ${config.wide ? "max-w-2xl" : "max-w-md"} bg-white rounded-[24px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200`}
+        className={`w-full ${config.wide ? "max-w-2xl" : "max-w-md"} bg-white rounded-[24px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col`}
         style={{ border: '1px solid rgba(255,255,255,0.8)' }}
       >
         {/* Header with Gradient Background */}
-        <div className={`px-6 py-6 bg-gradient-to-r ${config.gradient} relative overflow-hidden`}>
+        <div className={`px-5 py-5 sm:px-6 sm:py-6 bg-gradient-to-r ${config.gradient} relative overflow-hidden flex-shrink-0`}>
           {/* Decorative circles */}
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
           <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-black/5 rounded-full blur-xl" />
@@ -2316,8 +2313,8 @@ function AddFormModal({ type, onClose, onSubmit, initialData }: {
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmitWithPublish} className="bg-white">
-          <div className={`grid ${config.wide ? "grid-cols-2" : "grid-cols-1"} gap-x-6 gap-y-5 p-7`}>
+        <form onSubmit={handleSubmitWithPublish} className="bg-white overflow-y-auto flex-1">
+          <div className={`grid ${config.wide ? "sm:grid-cols-2 grid-cols-1" : "grid-cols-1"} gap-x-6 gap-y-4 p-5 sm:p-7`}>
             {config.fields.map((field) => (
               <div key={field.name} className={`space-y-1.5 ${field.fullWidth ? "col-span-2" : "col-span-1"}`}>
                 <Label className="font-semibold text-xs text-slate-500 uppercase tracking-wider ml-1">{field.label}</Label>
@@ -2404,7 +2401,7 @@ function AddFormModal({ type, onClose, onSubmit, initialData }: {
           </div>
 
           {/* Footer with subtle contrast */}
-          <div className="px-7 py-5 bg-slate-50/80 border-t border-slate-100 flex justify-end items-center space-x-4">
+          <div className="px-5 sm:px-7 py-4 sm:py-5 bg-slate-50/80 border-t border-slate-100 flex justify-end items-center space-x-3 flex-shrink-0">
             <button 
               type="button" 
               onClick={onClose}

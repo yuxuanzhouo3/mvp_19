@@ -109,11 +109,11 @@ export default function AISearchPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-100">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
-          <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors">
+          <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors flex-shrink-0">
             <ArrowLeft size={16} /> {t("back")}
           </button>
-          <span className="font-semibold text-slate-800">{t("ai_search_title")}</span>
-          <span className="text-xs text-slate-400 ml-1">· 搜索博主/企业/VC，自动提取联系方式</span>
+          <span className="font-semibold text-slate-800 flex-shrink-0">{t("ai_search_title")}</span>
+          <span className="text-xs text-slate-400 ml-1 hidden sm:inline truncate">· 搜索博主/企业/VC，自动提取联系方式</span>
         </div>
       </header>
 
@@ -124,31 +124,32 @@ export default function AISearchPage() {
           </h2>
           <div className="space-y-4">
             {/* 类型选择 */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {(Object.entries(TYPE_CONFIG) as [LeadType, typeof TYPE_CONFIG.blogger][]).map(([key, cfg]) => (
                 <button key={key} onClick={() => setType(key)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${type === key ? cfg.color + " shadow-sm" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-all ${type === key ? cfg.color + " shadow-sm" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
                   <cfg.icon size={14} /> {cfg.label}
                 </button>
               ))}
             </div>
             {/* 搜索输入 */}
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <Input value={query} onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && !isQuotaExceeded && handleSearch()}
-                placeholder={`搜索${TYPE_CONFIG[type].label}名称、领域关键词...`}
+                placeholder={`搜索${TYPE_CONFIG[type].label}...`}
                 className="flex-1 h-11 rounded-xl" />
-              <Button onClick={handleSearch} disabled={searching || isQuotaExceeded} className="h-11 px-6 bg-blue-600 hover:bg-blue-700 rounded-xl disabled:opacity-50">
-                {searching ? <><Loader2 size={15} className="mr-2 animate-spin" />{t("searching")}</> : <><Search size={15} className="mr-2" />{t("ai_search")}</>}
+              <Button onClick={handleSearch} disabled={searching || isQuotaExceeded} className="h-11 px-4 bg-blue-600 hover:bg-blue-700 rounded-xl disabled:opacity-50 flex-shrink-0">
+                {searching ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
+                <span className="hidden sm:inline ml-2">{searching ? t("searching") : t("ai_search")}</span>
               </Button>
             </div>
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
             {isQuotaExceeded && (
               <Alert variant="destructive">
-                <AlertDescription className="flex items-center justify-between">
+                <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
                   <span>AI 搜索余额不足，请购买会员获取更多次数</span>
                   <button onClick={() => router.push("/market/membership?from=quota")}
-                    className="ml-3 text-xs underline font-semibold whitespace-nowrap">立即购买 →</button>
+                    className="text-xs underline font-semibold whitespace-nowrap">立即购买 →</button>
                 </AlertDescription>
               </Alert>
             )}
@@ -159,10 +160,10 @@ export default function AISearchPage() {
             )}
             {/* 用量展示 */}
             <div className="bg-slate-50 rounded-xl px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-500">
+              <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-1 text-xs text-slate-500">
                 <span>余额 <span className={`font-semibold ${usage.remainingCalls <= 20 ? "text-red-500" : "text-slate-700"}`}>¥{usage.balance.toFixed(4)}</span></span>
                 <span>已消费 <span className="font-semibold text-slate-700">¥{usage.totalUsed.toFixed(4)}</span></span>
-                <span>累计调用 <span className="font-semibold text-slate-700">{usage.callCount}</span> 次</span>
+                <span>调用 <span className="font-semibold text-slate-700">{usage.callCount}</span> 次</span>
                 <span className={`font-semibold ${usage.remainingCalls <= 20 ? "text-red-500" : usage.remainingCalls <= 50 ? "text-orange-500" : "text-emerald-600"}`}>
                   剩余约 {usage.remainingCalls} 次
                 </span>
@@ -218,8 +219,8 @@ export default function AISearchPage() {
                       {lead.description && <p className="text-sm text-slate-500 mt-1 line-clamp-2">{lead.description}</p>}
                       <div className="flex flex-wrap gap-3 mt-2">
                         {lead.email && (
-                          <span className="flex items-center gap-1 text-xs text-slate-500">
-                            <Mail size={11} className="text-blue-400" /> {lead.email}
+                          <span className="flex items-center gap-1 text-xs text-slate-500 break-all">
+                            <Mail size={11} className="text-blue-400 flex-shrink-0" /> {lead.email}
                             {lead.email.startsWith("bd@") || lead.email.startsWith("contact@") || lead.email.startsWith("pr@") || lead.email.startsWith("cooperation@") ? (
                               <span className="text-orange-400 text-[10px]">（推断）</span>
                             ) : null}
@@ -232,21 +233,21 @@ export default function AISearchPage() {
                         )}
                         {lead.website && (
                           <a href={lead.website} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-blue-500 hover:underline">
-                            <Globe size={11} /> {lead.website}
+                            className="flex items-center gap-1 text-xs text-blue-500 hover:underline break-all">
+                            <Globe size={11} className="flex-shrink-0" /> <span className="truncate max-w-[160px]">{lead.website}</span>
                           </a>
                         )}
                       </div>
                       <p className="text-xs text-slate-400 mt-1">搜索词：{lead.query}</p>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex flex-col gap-2 flex-shrink-0">
                       <Button size="sm" variant="outline" className="h-8 text-xs border-blue-200 text-blue-600 hover:bg-blue-50"
                         onClick={() => setMsgModal({
                           lead,
                           subject: "来自 mornbusiness 的合作邀约",
                           content: `您好！\n\n我们对您的业务非常感兴趣，希望能与您建立合作关系。\n\n期待您的回复！`
                         })}>
-                        <Send size={12} className="mr-1" /> {t("send_coop_info")}
+                        <Send size={12} className="mr-1" /> <span className="hidden sm:inline">{t("send_coop_info")}</span><span className="sm:hidden">发送</span>
                       </Button>
                       <Button size="sm" variant="outline" className="h-8 text-xs text-red-500 border-red-200 hover:bg-red-50"
                         onClick={() => handleDelete(lead.id)}>

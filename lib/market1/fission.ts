@@ -237,12 +237,19 @@ export async function getUserInviteData(userId: string) {
   if (isCN()) {
     const db = await getCB()
     try {
-      const [userR, relR, linkR] = await Promise.all([
-        db.collection("users").where({ id: userId }).get(),
-        db.collection("referral_relations").where({ inviter_user_id: userId }).get(),
-        db.collection("referral_links").where({ creator_user_id: userId }).get(),
+      // 尝试多种方式查找用户
+      let user: any = null
+      const r1 = await db.collection("users").where({ id: userId }).get()
+      user = r1?.data?.[0]
+      if (!user) {
+        const r2 = await db.collection("users").where({ _id: userId }).get()
+        user = r2?.data?.[0]
+      }
+
+      const [relR, linkR] = await Promise.all([
+        db.collection("referral_relations").where({ inviter_user_id: userId }).get().catch(() => ({ data: [] })),
+        db.collection("referral_links").where({ creator_user_id: userId }).get().catch(() => ({ data: [] })),
       ])
-      const user = userR?.data?.[0]
       const relations = Array.isArray(relR?.data) ? relR.data : []
       const links = Array.isArray(linkR?.data) ? linkR.data : []
       const referralCode = user?.referral_code || ""
@@ -254,7 +261,10 @@ export async function getUserInviteData(userId: string) {
         invitedCount: relations.length,
         activatedCount: relations.filter((r: any) => r.activated_at).length,
       }
-    } catch { return { referralCode: "", shareUrl: "", clickCount: 0, invitedCount: 0, activatedCount: 0 } }
+    } catch (e) {
+      console.error("[getUserInviteData CN]", e)
+      return { referralCode: "", shareUrl: "", clickCount: 0, invitedCount: 0, activatedCount: 0 }
+    }
   }
 
   const sb = await getSB()

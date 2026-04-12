@@ -10,17 +10,33 @@ const AI_SEARCH_QUOTA_TABLE = "ai_search_quota"
 // 注册时分配 AI 搜索初始额度
 async function grantInitialAIQuota(userId: string) {
   try {
-    if (!isCN()) {
+    const now = new Date().toISOString()
+    if (isCN()) {
+      // 国内版：CloudBase
+      const cb = await import("@cloudbase/node-sdk")
+      const app = cb.init({ env: process.env.CLOUDBASE_ENV_ID!, secretId: process.env.CLOUDBASE_SECRET_ID!, secretKey: process.env.CLOUDBASE_SECRET_KEY! })
+      const db = app.database()
+      await db.collection(AI_SEARCH_QUOTA_TABLE).add({
+        id: `quota-${randomUUID().slice(0, 8)}`,
+        user_id: userId,
+        balance: 0.1,
+        total_used: 0,
+        call_count: 0,
+        created_at: now,
+        updated_at: now,
+      })
+    } else {
+      // 国际版：Supabase
       const { createClient } = await import("@supabase/supabase-js")
       const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
       await sb.from(AI_SEARCH_QUOTA_TABLE).upsert({
         id: `quota-${randomUUID().slice(0, 8)}`,
         user_id: userId,
-        balance: 0.1,       // 注册送 ¥0.1 = 200次
+        balance: 0.1,
         total_used: 0,
         call_count: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: now,
+        updated_at: now,
       }, { onConflict: "user_id" })
     }
   } catch (e) {
@@ -115,24 +131,47 @@ export async function registerUser(email: string, password: string, options?: { 
     await grantInitialAIQuota(userId)
 
     // 绑定邀请关系（如果有邀请码）
-    // 注意：cookie 在服务端注册接口里读取，这里通过参数传入
     if (options?.referralCode) {
       try {
-        const { createClient } = await import("@supabase/supabase-js")
         const { randomUUID } = await import("crypto")
-        const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-        // 找邀请人
-        const { data: inviter } = await sb.from("users").select("id").eq("referral_code", options.referralCode).maybeSingle()
-        if (inviter?.id && inviter.id !== userId) {
-          await sb.from("referral_relations").insert({
-            id: `rr-${randomUUID().slice(0, 8)}`,
-            inviter_user_id: inviter.id,
-            invited_user_id: userId,
-            share_code: options.referralCode,
-            status: "bound",
-            created_at: now,
-          })
-          console.log(`[Auth Service] 邀请关系绑定: ${inviter.id} → ${userId}`)
+        const { isCN } = await import("@/lib/db-adapter")
+        const refCode = options.referralCode.trim()
+
+        if (isCN()) {
+          // 国内版：CloudBase
+          const cb = await import("@cloudbase/node-sdk")
+          const app = cb.init({ env: process.env.CLOUDBASE_ENV_ID!, secretId: process.env.CLOUDBASE_SECRET_ID!, secretKey: process.env.CLOUDBASE_SECRET_KEY! })
+          const db = app.database()
+          const inviterR = await db.collection("users").where({ referral_code: refCode }).get()
+          const inviter = inviterR?.data?.[0]
+          const inviterId = inviter?.id || inviter?._id
+          if (inviterId && inviterId !== userId) {
+            await db.collection("referral_relations").add({
+              id: `rr-${randomUUID().slice(0, 8)}`,
+              inviter_user_id: inviterId,
+              invited_user_id: userId,
+              share_code: refCode,
+              status: "bound",
+              created_at: now,
+            })
+            console.log(`[Auth Service] 邀请关系绑定(CN): ${inviterId} → ${userId}`)
+          }
+        } else {
+          // 国际版：Supabase
+          const { createClient } = await import("@supabase/supabase-js")
+          const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+          const { data: inviter } = await sb.from("users").select("id").eq("referral_code", refCode).maybeSingle()
+          if (inviter?.id && inviter.id !== userId) {
+            await sb.from("referral_relations").insert({
+              id: `rr-${randomUUID().slice(0, 8)}`,
+              inviter_user_id: inviter.id,
+              invited_user_id: userId,
+              share_code: refCode,
+              status: "bound",
+              created_at: now,
+            })
+            console.log(`[Auth Service] 邀请关系绑定(INTL): ${inviter.id} → ${userId}`)
+          }
         }
       } catch (e) {
         console.warn("[Auth Service] 邀请关系绑定失败（非致命）:", e)
@@ -142,13 +181,10 @@ export async function registerUser(email: string, password: string, options?: { 
     return { ok: true, message: "注册成功", userId }
   } catch (error: any) {
     console.error("[Auth Service] 注册错误:", error)
-
-    // 处理数据库环境错误
     const errorMsg = error.message || "注册失败"
     if (errorMsg.includes("env not exists") || error.code === "INVALID_ENV") {
       return { ok: false, message: "数据库环境配置异常，请检查环境 ID 或联系管理员" }
     }
-
     return { ok: false, message: errorMsg }
   }
 }

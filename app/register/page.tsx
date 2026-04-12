@@ -1,26 +1,22 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, UserPlus } from "lucide-react"
 
-export default function RegisterPage() {
+function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const isZh = (process.env.NEXT_PUBLIC_SITE_REGION ?? "auto").toLowerCase() === "cn"
   const router = useRouter()
-
-  // 读取邀请码（从 URL ?ref= 参数）
-  const [refCode] = useState(() => {
-    if (typeof window === "undefined") return ""
-    return new URLSearchParams(window.location.search).get("ref") || ""
-  })
+  const searchParams = useSearchParams()
+  const refCode = searchParams.get("ref") || ""
 
   return (
     <div className="min-h-screen bg-gradient-hero relative overflow-hidden">
@@ -284,5 +280,13 @@ export default function RegisterPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-hero flex items-center justify-center"><div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
+      <RegisterForm />
+    </Suspense>
   )
 }

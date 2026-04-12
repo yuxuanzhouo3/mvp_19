@@ -263,3 +263,86 @@ html {
 .nav-link:hover::after {
   width: 80%;
 }
+
+/* ============================================
+   Mobile Responsive Utilities
+   ============================================ */
+
+/* 防止表格横向溢出 */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 移动端触摸优化 */
+@media (max-width: 768px) {
+  /* 防止页面横向滚动 */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* 表格在移动端可横向滚动 */
+  table {
+    min-width: 500px;
+  }
+
+  /* Tab 列表移动端横向滚动 */
+  [role="tablist"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+  }
+  [role="tablist"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 按钮触摸区域最小 44px */
+  button, a[role="button"], [role="tab"] {
+    min-height: 36px;
+  }
+
+  /* 卡片内边距移动端缩小 */
+  .card-mobile-compact {
+    padding: 12px !important;
+  }
+
+  /* 隐藏移动端不必要的装饰元素 */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* 统计卡片移动端2列 */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* 头部导航移动端紧凑 */
+  header .max-w-4xl,
+  header .max-w-3xl,
+  header .max-w-7xl {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Modal 移动端全屏底部弹出 */
+  .modal-mobile-bottom {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+/* 移动端底部安全区域 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

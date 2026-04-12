@@ -35,36 +35,67 @@ export async function POST(req: NextRequest) {
     const attach = JSON.parse(trade.attach || "{}")
     const userId = attach.userId
     const planId = attach.planId
-    const amount = trade.amount.total / 100 // 分转元
+    const amount = trade.amount.total / 100
 
     if (userId && planId) {
-      const sb = await getSupabase()
-      const { data: plan } = await sb.from("membership_plans").select("*").eq("id", planId).single()
-      if (plan) {
-        const expiresAt = new Date()
-        expiresAt.setMonth(expiresAt.getMonth() + plan.months)
-        await sb.from("user_memberships").insert({
-          id: `mem-${randomUUID().slice(0, 8)}`,
-          user_id: userId, plan_id: planId, plan_name: plan.name,
-          region: "cn", duration: plan.duration,
-          amount_paid: amount, currency: "cny",
-          ai_quota_granted: plan.ai_quota,
-          expires_at: expiresAt.toISOString(),
-          payment_method: "wechat_pay",
-          payment_id: trade.transaction_id,
-          status: "active",
-          created_at: new Date().toISOString(),
-        })
-        // 增加 AI 额度
-        const { data: quota } = await sb.from("ai_search_quota").select("*").eq("user_id", userId).maybeSingle()
-        const newBalance = parseFloat(((quota?.balance || 0) + parseFloat(plan.ai_quota)).toFixed(4))
-        await sb.from("ai_search_quota").upsert({
-          id: quota?.id || `quota-${randomUUID().slice(0, 8)}`,
-          user_id: userId, balance: newBalance,
-          total_used: quota?.total_used || 0,
-          call_count: quota?.call_count || 0,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" })
+      const { isCN } = await import("@/lib/db-adapter")
+      if (isCN()) {
+        // 国内版：CloudBase
+        const cb = await import("@cloudbase/node-sdk")
+        const app = cb.init({ env: process.env.CLOUDBASE_ENV_ID!, secretId: process.env.CLOUDBASE_SECRET_ID!, secretKey: process.env.CLOUDBASE_SECRET_KEY! })
+        const db = app.database()
+        const planR = await db.collection("membership_plans").where({ id: planId }).get()
+        const plan = planR?.data?.[0]
+        if (plan) {
+          const expiresAt = new Date(); expiresAt.setMonth(expiresAt.getMonth() + plan.months)
+          await db.collection("user_memberships").add({
+            id: `mem-${randomUUID().slice(0, 8)}`,
+            user_id: userId, plan_id: planId, plan_name: plan.name,
+            region: "cn", duration: plan.duration,
+            amount_paid: amount, currency: "cny",
+            ai_quota_granted: plan.ai_quota,
+            expires_at: expiresAt.toISOString(),
+            payment_method: "wechat_pay",
+            payment_id: trade.transaction_id,
+            status: "active", created_at: new Date().toISOString(),
+          })
+          // 增加 AI 额度
+          const quotaR = await db.collection("ai_search_quota").where({ user_id: userId }).get()
+          const quota = quotaR?.data?.[0]
+          const newBalance = parseFloat(((quota?.balance || 0) + parseFloat(plan.ai_quota)).toFixed(4))
+          if (quota?._id) {
+            await db.collection("ai_search_quota").doc(quota._id).update({ balance: newBalance, updated_at: new Date().toISOString() })
+          } else {
+            await db.collection("ai_search_quota").add({ id: `quota-${randomUUID().slice(0,8)}`, user_id: userId, balance: newBalance, total_used: 0, call_count: 0, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          }
+        }
+      } else {
+        // 国际版：Supabase
+        const { createClient } = await import("@supabase/supabase-js")
+        const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+        const { data: plan } = await sb.from("membership_plans").select("*").eq("id", planId).single()
+        if (plan) {
+          const expiresAt = new Date(); expiresAt.setMonth(expiresAt.getMonth() + plan.months)
+          await sb.from("user_memberships").insert({
+            id: `mem-${randomUUID().slice(0, 8)}`,
+            user_id: userId, plan_id: planId, plan_name: plan.name,
+            region: "cn", duration: plan.duration,
+            amount_paid: amount, currency: "cny",
+            ai_quota_granted: plan.ai_quota,
+            expires_at: expiresAt.toISOString(),
+            payment_method: "wechat_pay",
+            payment_id: trade.transaction_id,
+            status: "active", created_at: new Date().toISOString(),
+          })
+          const { data: quota } = await sb.from("ai_search_quota").select("*").eq("user_id", userId).maybeSingle()
+          const newBalance = parseFloat(((quota?.balance || 0) + parseFloat(plan.ai_quota)).toFixed(4))
+          await sb.from("ai_search_quota").upsert({
+            id: quota?.id || `quota-${randomUUID().slice(0, 8)}`,
+            user_id: userId, balance: newBalance,
+            total_used: quota?.total_used || 0, call_count: quota?.call_count || 0,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" })
+        }
       }
     }
 

@@ -20,6 +20,75 @@ async function getSupabase() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 }
 
+async function getCB() {
+  const cb = await import("@cloudbase/node-sdk")
+  const app = cb.init({ env: process.env.CLOUDBASE_ENV_ID!, secretId: process.env.CLOUDBASE_SECRET_ID!, secretKey: process.env.CLOUDBASE_SECRET_KEY! })
+  return app.database()
+}
+
+// 通用额度操作（国内/国外）
+async function getQuota(userId: string) {
+  const { isCN } = await import("@/lib/db-adapter")
+  if (isCN()) {
+    const db = await getCB()
+    try {
+      const r = await db.collection("ai_search_quota").where({ user_id: userId }).get()
+      return r?.data?.[0] || null
+    } catch { return null }
+  }
+  const sb = await getSupabase()
+  const { data } = await sb.from("ai_search_quota").select("*").eq("user_id", userId).maybeSingle()
+  return data
+}
+
+async function upsertQuota(userId: string, quota: any, patch: Record<string, any>) {
+  const { isCN } = await import("@/lib/db-adapter")
+  if (isCN()) {
+    const db = await getCB()
+    if (quota?._id) {
+      await db.collection("ai_search_quota").doc(quota._id).update({ ...patch, updated_at: nowIso() })
+    } else {
+      await db.collection("ai_search_quota").add({ id: `quota-${randomUUID().slice(0,8)}`, user_id: userId, balance: 0.1, total_used: 0, call_count: 0, created_at: nowIso(), ...patch, updated_at: nowIso() })
+    }
+    return
+  }
+  const sb = await getSupabase()
+  if (quota) {
+    await sb.from("ai_search_quota").update({ ...patch, updated_at: nowIso() }).eq("user_id", userId)
+  } else {
+    await sb.from("ai_search_quota").upsert({ id: `quota-${randomUUID().slice(0,8)}`, user_id: userId, balance: 0.1, total_used: 0, call_count: 0, created_at: nowIso(), ...patch, updated_at: nowIso() }, { onConflict: "user_id" })
+  }
+}
+
+async function insertLeads(rows: any[]) {
+  const { isCN } = await import("@/lib/db-adapter")
+  if (isCN()) {
+    const db = await getCB()
+    for (const row of rows) await db.collection("ai_search_leads").add(row)
+    return rows
+  }
+  const sb = await getSupabase()
+  const { data, error } = await sb.from("ai_search_leads").insert(rows).select()
+  if (error) throw new Error(error.message)
+  return data
+}
+
+async function getLeads(userId: string) {
+  const { isCN } = await import("@/lib/db-adapter")
+  if (isCN()) {
+    const db = await getCB()
+    try {
+      await db.collection("ai_search_leads").where({ expires_at: db.command.lt(nowIso()) }).remove().catch(() => {})
+      const r = await db.collection("ai_search_leads").where({ user_id: userId }).get()
+      return Array.isArray(r?.data) ? r.data.sort((a: any, b: any) => b.created_at > a.created_at ? 1 : -1) : []
+    } catch { return [] }
+  }
+  const sb = await getSupabase()
+  await sb.from("ai_search_leads").delete().lt("expires_at", nowIso())
+  const { data } = await sb.from("ai_search_leads").select("*").eq("user_id", userId).order("created_at", { ascending: false })
+  return data || []
+}
+
 // AI 搜索：调用 web search + LLM 提取
 async function aiSearchAndExtract(query: string, type: string): Promise<{ name: string; email: string; website: string; description: string; rawContent: string }[]> {
   const typeLabel = type === "blogger" ? "博主/KOL" : type === "enterprise" ? "企业/公司" : "VC投资机构"
@@ -156,20 +225,12 @@ export async function POST(req: NextRequest) {
   const COST_PER_CALL = 0.0005  // 每次真实成本，¥0.1 = 200次
 
   try {
-    const sb = await getSupabase()
-
-    // 查用户个人额度，不存在则自动初始化（兼容老用户）
-    let { data: quotaRows } = await sb.from("ai_search_quota").select("*").eq("user_id", userId)
-    if (!quotaRows?.length) {
-      await sb.from("ai_search_quota").upsert({
-        id: `quota-${randomUUID().slice(0, 8)}`,
-        user_id: userId, balance: 0.1, total_used: 0, call_count: 0,
-        created_at: nowIso(), updated_at: nowIso(),
-      }, { onConflict: "user_id" })
-      const { data: refetch } = await sb.from("ai_search_quota").select("*").eq("user_id", userId)
-      quotaRows = refetch
+    // 查用户个人额度，不存在则自动初始化
+    let quota = await getQuota(userId)
+    if (!quota) {
+      await upsertQuota(userId, null, { balance: 0.1, total_used: 0, call_count: 0 })
+      quota = await getQuota(userId)
     }
-    const quota = quotaRows?.[0]
     const balance = parseFloat(quota?.balance ?? "0")
     const totalUsed = parseFloat(quota?.total_used ?? "0")
     const callCount = quota?.call_count ?? 0
@@ -200,17 +261,13 @@ export async function POST(req: NextRequest) {
       created_at: nowIso(),
     }))
 
-    const { data, error } = await sb.from("ai_search_leads").insert(rows).select()
-    if (error) throw new Error(error.message)
+    const data = await insertLeads(rows)
 
     // 扣除额度
     const newBalance = parseFloat((balance - COST_PER_CALL).toFixed(4))
     const newTotalUsed = parseFloat((totalUsed + COST_PER_CALL).toFixed(4))
     const newCallCount = callCount + 1
-    await sb.from("ai_search_quota").update({
-      balance: newBalance, total_used: newTotalUsed,
-      call_count: newCallCount, updated_at: nowIso(),
-    }).eq("user_id", userId)
+    await upsertQuota(userId, quota, { balance: newBalance, total_used: newTotalUsed, call_count: newCallCount })
 
     const remainingCalls = Math.floor(newBalance / COST_PER_CALL)
     return NextResponse.json({
@@ -232,15 +289,11 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.json({ ok: false, message: "未登录" }, { status: 401 })
 
   try {
-    const sb = await getSupabase()
-    await sb.from("ai_search_leads").delete().lt("expires_at", nowIso())
-
-    const [{ data }, { data: quotaRows }] = await Promise.all([
-      sb.from("ai_search_leads").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
-      sb.from("ai_search_quota").select("*").eq("user_id", userId),
+    const [leads, quota] = await Promise.all([
+      getLeads(userId),
+      getQuota(userId),
     ])
 
-    const quota = quotaRows?.[0]
     const COST_PER_CALL = 0.0005
     const balance = parseFloat(quota?.balance ?? "0.1")
     const totalUsed = parseFloat(quota?.total_used ?? "0")
@@ -249,7 +302,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      data: data || [],
+      data: leads,
       quota: {
         balance, totalUsed, callCount,
         costPerCall: COST_PER_CALL,
@@ -267,8 +320,14 @@ export async function DELETE(req: NextRequest) {
   if (!userId) return NextResponse.json({ ok: false, message: "未登录" }, { status: 401 })
   const { id } = await req.json()
   try {
-    const sb = await getSupabase()
-    await sb.from("ai_search_leads").delete().eq("id", id).eq("user_id", userId)
+    const { isCN } = await import("@/lib/db-adapter")
+    if (isCN()) {
+      const db = await getCB()
+      await db.collection("ai_search_leads").where({ id, user_id: userId }).remove()
+    } else {
+      const sb = await getSupabase()
+      await sb.from("ai_search_leads").delete().eq("id", id).eq("user_id", userId)
+    }
     return NextResponse.json({ ok: true })
   } catch (e: any) {
     return NextResponse.json({ ok: false, message: e.message }, { status: 500 })
@@ -280,10 +339,18 @@ export async function PATCH(req: NextRequest) {
   if (!userId) return NextResponse.json({ ok: false, message: "未登录" }, { status: 401 })
   const { id, message: emailMessage, subject, toEmail } = await req.json()
   try {
-    const sb = await getSupabase()
-    const { data: rows } = await sb.from("ai_search_leads").select("*").eq("id", id).eq("user_id", userId)
-    if (!rows?.length) return NextResponse.json({ ok: false, message: "记录不存在" }, { status: 404 })
-    const lead = rows[0]
+    const { isCN } = await import("@/lib/db-adapter")
+    let lead: any = null
+    if (isCN()) {
+      const db = await getCB()
+      const r = await db.collection("ai_search_leads").where({ id, user_id: userId }).get()
+      lead = r?.data?.[0]
+    } else {
+      const sb = await getSupabase()
+      const { data: rows } = await sb.from("ai_search_leads").select("*").eq("id", id).eq("user_id", userId)
+      lead = rows?.[0]
+    }
+    if (!lead) return NextResponse.json({ ok: false, message: "记录不存在" }, { status: 404 })
     const targetEmail = toEmail || lead.email
     if (!targetEmail) return NextResponse.json({ ok: false, message: "请填写收件邮箱" }, { status: 400 })
 
@@ -293,7 +360,13 @@ export async function PATCH(req: NextRequest) {
       body: emailMessage || `您好！\n\n我们对您的业务非常感兴趣，希望能与您建立合作关系。\n\n期待您的回复！`,
     })
 
-    await sb.from("ai_search_leads").update({ email_sent: true, email_sent_at: nowIso() }).eq("id", id)
+    if (isCN()) {
+      const db = await getCB()
+      await db.collection("ai_search_leads").where({ id }).update({ email_sent: true, email_sent_at: nowIso() })
+    } else {
+      const sb = await getSupabase()
+      await sb.from("ai_search_leads").update({ email_sent: true, email_sent_at: nowIso() }).eq("id", id)
+    }
     return NextResponse.json({ ok: true, message: "邮件已发送" })
   } catch (e: any) {
     console.error("[ai-search PATCH error]", e.message)
