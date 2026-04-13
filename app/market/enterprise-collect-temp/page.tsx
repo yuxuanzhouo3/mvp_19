@@ -1,5 +1,5 @@
 ﻿﻿﻿﻿"use client"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useUser } from '@/lib/auth/use-user'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { useSearchParams } from 'next/navigation'
 
-export default function EnterpriseCollectTempPage() {
+function EnterpriseCollectTempContent() {
   const { user } = useUser()
   const searchParams = useSearchParams()
   const taskId = searchParams.get('taskId')
@@ -92,5 +92,13 @@ export default function EnterpriseCollectTempPage() {
       </Card>
       <p className="mt-4 text-sm text-gray-500">提示：只有未同步且有效的数据会被同步到线索池</p>
     </div>
+  )
+}
+
+export default function EnterpriseCollectTempPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
+      <EnterpriseCollectTempContent />
+    </Suspense>
   )
 }

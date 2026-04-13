@@ -1,11 +1,11 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { CheckCircle, Zap, ArrowRight, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { t } from "@/lib/market/i18n"
 
-export default function MembershipSuccessPage() {
+function MembershipSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const sessionId = searchParams.get("session_id")
@@ -13,9 +13,8 @@ export default function MembershipSuccessPage() {
   const [done, setDone] = useState(false)
 
   useEffect(() => {
-    // Stripe 支付成功后，webhook 会自动处理额度，这里只做展示
-    const t = setTimeout(() => setDone(true), 1000)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setDone(true), 1000)
+    return () => clearTimeout(timer)
   }, [])
 
   return (
@@ -39,5 +38,13 @@ export default function MembershipSuccessPage() {
         </Button>
       </div>
     </div>
+  )
+}
+
+export default function MembershipSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 size={32} className="animate-spin text-blue-500" /></div>}>
+      <MembershipSuccessContent />
+    </Suspense>
   )
 }
