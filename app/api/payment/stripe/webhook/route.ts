@@ -3,11 +3,10 @@ import Stripe from "stripe"
 import { dbAdapter } from "@/lib/db-adapter"
 import { parseAmount, formatAmount } from "@/lib/api-utils"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2025-01-27.acacia" })
-
 export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2026-03-25.dahlia" as any })
   const body = await request.text()
   const sig = request.headers.get("stripe-signature") || ""
 
@@ -51,7 +50,11 @@ export async function POST(request: NextRequest) {
         // 增加 AI 额度
         const quotaToAdd = parseFloat(aiQuota || "0")
         if (quotaToAdd > 0) {
-          const { data: quota } = await sb.from("ai_search_quota").select("*").eq("user_id", userId).single().catch(() => ({ data: null }))
+          let quota: any = null
+          try {
+            const r = await sb.from("ai_search_quota").select("*").eq("user_id", userId).single()
+            quota = r.data
+          } catch {}
           const newBalance = parseFloat(((quota?.balance || 0) + quotaToAdd).toFixed(4))
           await sb.from("ai_search_quota").upsert({
             id: quota?.id || `quota-${randomUUID().slice(0, 8)}`,
