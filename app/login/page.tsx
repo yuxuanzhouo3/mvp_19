@@ -283,9 +283,11 @@ export default function LoginPage() {
 
               <div className="mt-6 pt-6 border-t border-slate-200/60">
                 <div className="flex items-center justify-between text-sm">
-                  <Link href="/" className="text-slate-500 hover:text-blue-600 transition-colors">
-                    {t.back}
-                  </Link>
+                  {isCN ? (
+                    <Link href="/forgot-password" className="text-slate-400 hover:text-blue-600 transition-colors">
+                      忘记密码？
+                    </Link>
+                  ) : <span />}
                   <div className="flex items-center gap-1 text-slate-500">
                     <span>{t.noAccount}</span>
                     <Link href="/register" className="text-blue-600 font-semibold hover:text-blue-700 transition-colors">

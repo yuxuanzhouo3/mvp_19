@@ -7,272 +7,186 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, UserPlus } from "lucide-react"
+import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, UserPlus, ShieldCheck, Loader2 } from "lucide-react"
+
+const isCN = (process.env.NEXT_PUBLIC_SITE_REGION ?? "auto").toLowerCase() === "cn"
 
 function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const isZh = (process.env.NEXT_PUBLIC_SITE_REGION ?? "auto").toLowerCase() === "cn"
+  const [emailCode, setEmailCode] = useState("")
+  const [sendingCode, setSendingCode] = useState(false)
+  const [codeSent, setCodeSent] = useState(false)
+  const [countdown, setCountdown] = useState(0)
+  const [email, setEmail] = useState("")
   const router = useRouter()
   const searchParams = useSearchParams()
   const refCode = searchParams.get("ref") || ""
 
+  const startCountdown = () => {
+    setCountdown(60)
+    const timer = setInterval(() => {
+      setCountdown(prev => { if (prev <= 1) { clearInterval(timer); return 0 } return prev - 1 })
+    }, 1000)
+  }
+
+  const handleSendCode = async () => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "请先输入正确的邮箱地址", variant: "destructive" }); return
+    }
+    setSendingCode(true)
+    try {
+      const res = await fetch("/api/auth/email/send-code", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, type: "register" }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setCodeSent(true)
+        startCountdown()
+        toast({ title: "验证码已发送", description: "请查收邮件，10分钟内有效" })
+      } else {
+        toast({ title: "发送失败", description: data.message, variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "发送失败，请重试", variant: "destructive" })
+    } finally { setSendingCode(false) }
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const password = String(formData.get("password") ?? "")
+    const confirmPassword = String(formData.get("confirmPassword") ?? "")
+
+    if (!email || !password || !confirmPassword) {
+      toast({ title: "请填写所有必填项", variant: "destructive" }); return
+    }
+    if (isCN && !emailCode) {
+      toast({ title: "请输入邮箱验证码", variant: "destructive" }); return
+    }
+    if (password !== confirmPassword) {
+      toast({ title: "两次密码不一致", variant: "destructive" }); return
+    }
+    if (password.length < 6) {
+      toast({ title: "密码长度至少6位", variant: "destructive" }); return
+    }
+
+    try {
+      setLoading(true)
+      const res = await fetch("/api/auth/register", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, emailCode: isCN ? emailCode : undefined, referralCode: refCode || undefined }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.ok) throw new Error(data.message ?? "注册失败")
+      toast({ title: "注册成功", description: "账号已创建，请登录" })
+      setTimeout(() => router.push("/login"), 1500)
+    } catch (error) {
+      toast({ title: "注册失败", description: error instanceof Error ? error.message : "未知错误", variant: "destructive" })
+    } finally { setLoading(false) }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-hero relative overflow-hidden">
-      {/* Decorative background elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-300/30 rounded-full blur-3xl" />
         <div className="absolute top-1/3 -left-20 w-72 h-72 bg-purple-300/20 rounded-full blur-3xl" />
         <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-cyan-300/20 rounded-full blur-3xl" />
       </div>
-
-      {/* Header */}
       <header className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-white/20">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 h-16 flex items-center">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/40 transition-shadow">
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-              mornbusiness
-            </span>
+            <span className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">mornbusiness</span>
           </Link>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-16">
         <div className="w-full max-w-md">
-          {/* Glass Card */}
           <div className="relative">
-            {/* Card background with glassmorphism */}
-            <div 
-              className="absolute inset-0 rounded-3xl"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(239,246,255,0.85) 50%, rgba(243,232,255,0.9) 100%)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.6)',
-                boxShadow: '0 25px 50px -12px rgba(59, 130, 246, 0.2), 0 0 0 1px rgba(255,255,255,0.5) inset'
-              }}
-            />
-            
-            <div className="relative p-8 md:p-10">
-              {/* Back button */}
-              <Link 
-                href="/" 
-                className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition-colors mb-6 group"
-              >
+            <div className="absolute inset-0 rounded-3xl" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(239,246,255,0.85) 50%, rgba(243,232,255,0.9) 100%)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 25px 50px -12px rgba(59,130,246,0.2)' }} />
+            <div className="relative p-8">
+              <Link href="/" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition-colors mb-6 group">
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                {isZh ? "返回首页" : "Back to home"}
+                {isCN ? "返回首页" : "Back to home"}
               </Link>
-
-              {/* Header */}
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-3">
-                  {isZh ? "注册账号" : "Create an account"}
+              <div className="text-center mb-6">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
+                  {isCN ? "注册账号" : "Create an account"}
                 </h1>
-                <p className="text-slate-500 text-sm">
-                  {isZh ? "输入你的邮箱和密码来创建一个新账号。" : "Enter your email and password to create a new account."}
-                </p>
+                <p className="text-slate-500 text-sm">{isCN ? "填写信息创建新账号" : "Enter your details to register"}</p>
               </div>
 
-              {/* Form */}
-              <form
-                className="space-y-5"
-                onSubmit={async (e) => {
-                  e.preventDefault()
-                  const formData = new FormData(e.currentTarget)
-                  const email = String(formData.get("email") ?? "")
-                  const password = String(formData.get("password") ?? "")
-                  const confirmPassword = String(formData.get("confirmPassword") ?? "")
-
-                  if (!email || !password || !confirmPassword) {
-                    toast({
-                      title: isZh ? "缺少字段" : "Missing fields",
-                      description: isZh ? "请填写所有必填项。" : "Please fill in all required fields.",
-                      variant: "destructive",
-                    })
-                    return
-                  }
-
-                  if (password !== confirmPassword) {
-                    toast({
-                      title: isZh ? "密码不匹配" : "Passwords do not match",
-                      description: isZh ? "两次输入的密码不一致。" : "The passwords you entered do not match.",
-                      variant: "destructive",
-                    })
-                    return
-                  }
-
-                  if (password.length < 6) {
-                    toast({
-                      title: isZh ? "密码太短" : "Password too short",
-                      description: isZh ? "密码长度至少为 6 位。" : "Password must be at least 6 characters.",
-                      variant: "destructive",
-                    })
-                    return
-                  }
-
-                  try {
-                    setLoading(true)
-                    const res = await fetch("/api/auth/register", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ email, password, referralCode: refCode || undefined }),
-                    })
-                    const data = (await res.json()) as { message?: string; ok: boolean }
-
-                    if (!res.ok || !data.ok) {
-                      throw new Error(data.message ?? (isZh ? "注册失败。" : "Registration failed."))
-                    }
-
-                    toast({
-                      title: isZh ? "注册成功" : "Success",
-                      description: data.message ?? (isZh ? "账号已创建，请登录。" : "Account created successfully, please log in.")
-                    })
-
-                    // 注册成功后，跳转到登录页面
-                    setTimeout(() => {
-                      router.push("/login")
-                    }, 1500)
-                  } catch (error) {
-                    toast({
-                      title: isZh ? "请求失败" : "Request failed",
-                      description: error instanceof Error ? error.message : isZh ? "未知错误。" : "Unexpected error.",
-                      variant: "destructive",
-                    })
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
-              >
-                {/* Email Input */}
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-slate-700 font-medium text-sm">
-                    {isZh ? "邮箱" : "Email"}
-                  </Label>
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                {/* 邮箱 */}
+                <div className="space-y-1.5">
+                  <Label className="text-slate-700 font-medium text-sm">{isCN ? "邮箱" : "Email"}</Label>
                   <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                    <Input 
-                      id="email" 
-                      name="email" 
-                      type="email" 
-                      placeholder="you@company.com" 
-                      required 
-                      className="pl-12 h-12 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm
-                        focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 
-                        placeholder:text-slate-400 transition-all duration-300
-                        hover:border-blue-300"
-                    />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="you@company.com" required
+                      className="pl-10 h-11 rounded-xl border-slate-200 bg-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
                   </div>
                 </div>
 
-                {/* Password Input */}
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-slate-700 font-medium text-sm">
-                    {isZh ? "密码" : "Password"}
-                  </Label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                    <Input 
-                      id="password" 
-                      name="password" 
-                      type={showPassword ? "text" : "password"} 
-                      placeholder={isZh ? "输入密码" : "Enter password"} 
-                      required 
-                      className="pl-12 pr-12 h-12 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm
-                        focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 
-                        placeholder:text-slate-400 transition-all duration-300
-                        hover:border-blue-300"
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition-colors"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {/* 国内版：邮箱验证码 */}
+                {isCN && (
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-700 font-medium text-sm">邮箱验证码</Label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input value={emailCode} onChange={e => setEmailCode(e.target.value)} placeholder="6位验证码" maxLength={6}
+                          className="pl-10 h-11 rounded-xl border-slate-200 bg-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                      </div>
+                      <Button type="button" variant="outline" onClick={handleSendCode}
+                        disabled={sendingCode || countdown > 0}
+                        className="h-11 px-4 rounded-xl whitespace-nowrap text-sm flex-shrink-0">
+                        {sendingCode ? <Loader2 size={14} className="animate-spin" /> : countdown > 0 ? `${countdown}s` : codeSent ? "重新发送" : "发送验证码"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 密码 */}
+                <div className="space-y-1.5">
+                  <Label className="text-slate-700 font-medium text-sm">{isCN ? "密码" : "Password"}</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input name="password" type={showPassword ? "text" : "password"} placeholder={isCN ? "至少6位" : "Min 6 characters"} required
+                      className="pl-10 pr-10 h-11 rounded-xl border-slate-200 bg-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500">
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
 
-                {/* Confirm Password Input */}
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-slate-700 font-medium text-sm">
-                    {isZh ? "确认密码" : "Confirm Password"}
-                  </Label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                    <Input 
-                      id="confirmPassword" 
-                      name="confirmPassword" 
-                      type={showConfirmPassword ? "text" : "password"} 
-                      placeholder={isZh ? "再次输入密码" : "Confirm password"} 
-                      required 
-                      className="pl-12 pr-12 h-12 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm
-                        focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 
-                        placeholder:text-slate-400 transition-all duration-300
-                        hover:border-blue-300"
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition-colors"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {/* 确认密码 */}
+                <div className="space-y-1.5">
+                  <Label className="text-slate-700 font-medium text-sm">{isCN ? "确认密码" : "Confirm Password"}</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input name="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder={isCN ? "再次输入密码" : "Confirm password"} required
+                      className="pl-10 pr-10 h-11 rounded-xl border-slate-200 bg-white/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" />
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500">
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
 
-                {/* Submit Button */}
-                <Button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full h-12 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 
-                    hover:from-blue-600 hover:via-purple-600 hover:to-cyan-600 
-                    text-white font-semibold text-base
-                    shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 
-                    transition-all duration-300 hover:-translate-y-0.5
-                    disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      {isZh ? "注册中..." : "Registering..."}
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <UserPlus className="w-5 h-5" />
-                      {isZh ? "立即注册" : "Register"}
-                    </span>
-                  )}
+                <Button type="submit" disabled={loading} className="w-full h-12 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 hover:from-blue-600 hover:via-purple-600 hover:to-cyan-600 text-white font-semibold shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 disabled:opacity-70">
+                  {loading ? <><Loader2 className="animate-spin w-4 h-4 mr-2" />{isCN ? "注册中..." : "Registering..."}</> : <><UserPlus className="w-4 h-4 mr-2" />{isCN ? "立即注册" : "Register"}</>}
                 </Button>
               </form>
 
-              {/* Footer Links */}
-              <div className="mt-6 pt-6 border-t border-slate-200/60">
-                <div className="flex items-center justify-between text-sm">
-                  <Link 
-                    href="/" 
-                    className="text-slate-500 hover:text-blue-600 transition-colors relative group"
-                  >
-                    {isZh ? "返回首页" : "Back to home"}
-                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-500 group-hover:w-full transition-all duration-300" />
-                  </Link>
-                  <div className="flex items-center gap-1 text-slate-500">
-                    <span>{isZh ? "已有账号？" : "Already have an account?"}</span>
-                    <Link 
-                      href="/login" 
-                      className="text-blue-600 font-semibold hover:text-blue-700 transition-colors relative group"
-                    >
-                      {isZh ? "立即登录" : "Login now"}
-                      <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300" />
-                    </Link>
-                  </div>
+              <div className="mt-5 pt-5 border-t border-slate-200/60 flex items-center justify-end text-sm">
+                <div className="flex items-center gap-1 text-slate-500">
+                  <span>{isCN ? "已有账号？" : "Have an account?"}</span>
+                  <Link href="/login" className="text-blue-600 font-semibold hover:text-blue-700">{isCN ? "立即登录" : "Login"}</Link>
                 </div>
               </div>
             </div>
