@@ -38,4 +38,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV NEXT_PRIVATE_STANDALONE=true
-CMD ["node", "-r", "dotenv/config", "server.js", "-p", "80"]
+CMD ["node", "server.js"]
