@@ -373,3 +373,60 @@ If you want, next I can generate:
 You are not building a website.
 You are building **AI Business Infrastructure.**
 This is the future unicorn platform architecture.
+
+---
+
+## 🐳 Docker构建说明
+
+### 环境变量配置
+
+应用需要以下环境变量，在构建时通过`--build-arg`传递：
+
+| 变量 | 说明 | 示例值 |
+|------|------|--------|
+| `NEXT_PUBLIC_SITE_REGION` | 区域设置 (cn/intl) | `cn` |
+| `NEXT_PUBLIC_WECHAT_APP_ID` | 微信登录AppID | `wx48a648f967ee565f` |
+| `NEXT_PUBLIC_APP_URL` | 应用访问URL | `https://your-domain.com` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google登录ClientID | (可选) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase URL (国际版) | (可选) |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase公钥 (国际版) | (可选) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe公钥 (国际版) | (可选) |
+
+### 构建命令示例
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_SITE_REGION=cn \
+  --build-arg NEXT_PUBLIC_WECHAT_APP_ID=wx48a648f967ee565f \
+  --build-arg NEXT_PUBLIC_APP_URL=https://your-app-domain.com \
+  -t mornbusiness:latest .
+```
+
+### CI/CD集成
+
+在CI/CD流水线中，确保传递这些构建参数：
+
+1. **腾讯云CI/CD**：在构建配置中添加构建参数
+2. **GitHub Actions**：在docker/build-push-action中设置`build-args`
+3. **GitLab CI**：在Docker构建命令中添加`--build-arg`
+
+### 本地开发
+
+复制 `.env.example` 为 `.env.local`：
+```bash
+cp .env.example .env.local
+# 编辑 .env.local 设置实际值
+```
+
+### 问题排查
+
+如果微信登录不显示或配置不正确，检查：
+1. 构建时是否传递了`NEXT_PUBLIC_WECHAT_APP_ID`参数
+2. `NEXT_PUBLIC_SITE_REGION`是否设置为`cn`
+3. 构建日志中的环境变量输出（Dockerfile中的调试输出）
+
+### 安全提示
+
+1. 不要将`.env.production`文件提交到git（已在.gitignore中）
+2. 敏感密钥应通过CI/CD secrets管理
+3. Next.js 15.2.4存在安全漏洞，建议升级到15.2.5+
