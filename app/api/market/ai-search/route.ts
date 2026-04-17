@@ -26,11 +26,35 @@ async function getCB() {
   return app.database()
 }
 
+// 确保 CloudBase 集合存在（如果不存在则创建）
+async function ensureCollection(db: any, collectionName: string) {
+  try {
+    await db.collection(collectionName).get()
+  } catch (err: any) {
+    // 仅当是集合不存在错误时才尝试创建集合
+    const isNotExist = err.message?.includes("not exist") || err.code?.includes("NOT_EXIST")
+    // 排除掉环境不存在的情况 (100003 是 CloudBase 环境不存在的错误码)
+    const isEnvError = err.message?.includes("env not exists") || err.code === "INVALID_ENV" || err.message?.includes("100003")
+
+    if (isNotExist && !isEnvError) {
+      try {
+        await db.createCollection(collectionName)
+        console.log(`[ai-search] 创建集合 ${collectionName} 成功`)
+      } catch (createErr) {
+        console.error(`[ai-search] 创建集合 ${collectionName} 失败:`, createErr)
+      }
+    } else {
+      console.error(`[ai-search] 访问集合 ${collectionName} 错误:`, err)
+    }
+  }
+}
+
 // 通用额度操作（国内/国外）
 async function getQuota(userId: string) {
   const { isCN } = await import("@/lib/db-adapter")
   if (isCN()) {
     const db = await getCB()
+    await ensureCollection(db, "ai_search_quota")
     try {
       const r = await db.collection("ai_search_quota").where({ user_id: userId }).get()
       return r?.data?.[0] || null
@@ -45,6 +69,7 @@ async function upsertQuota(userId: string, quota: any, patch: Record<string, any
   const { isCN } = await import("@/lib/db-adapter")
   if (isCN()) {
     const db = await getCB()
+    await ensureCollection(db, "ai_search_quota")
     if (quota?._id) {
       await db.collection("ai_search_quota").doc(quota._id).update({ ...patch, updated_at: nowIso() })
     } else {
@@ -64,6 +89,7 @@ async function insertLeads(rows: any[]) {
   const { isCN } = await import("@/lib/db-adapter")
   if (isCN()) {
     const db = await getCB()
+    await ensureCollection(db, "ai_search_leads")
     for (const row of rows) await db.collection("ai_search_leads").add(row)
     return rows
   }
@@ -77,6 +103,7 @@ async function getLeads(userId: string) {
   const { isCN } = await import("@/lib/db-adapter")
   if (isCN()) {
     const db = await getCB()
+    await ensureCollection(db, "ai_search_leads")
     try {
       await db.collection("ai_search_leads").where({ expires_at: db.command.lt(nowIso()) }).remove().catch(() => {})
       const r = await db.collection("ai_search_leads").where({ user_id: userId }).get()
@@ -323,6 +350,7 @@ export async function DELETE(req: NextRequest) {
     const { isCN } = await import("@/lib/db-adapter")
     if (isCN()) {
       const db = await getCB()
+      await ensureCollection(db, "ai_search_leads")
       await db.collection("ai_search_leads").where({ id, user_id: userId }).remove()
     } else {
       const sb = await getSupabase()
@@ -343,6 +371,7 @@ export async function PATCH(req: NextRequest) {
     let lead: any = null
     if (isCN()) {
       const db = await getCB()
+      await ensureCollection(db, "ai_search_leads")
       const r = await db.collection("ai_search_leads").where({ id, user_id: userId }).get()
       lead = r?.data?.[0]
     } else {
@@ -362,6 +391,7 @@ export async function PATCH(req: NextRequest) {
 
     if (isCN()) {
       const db = await getCB()
+      await ensureCollection(db, "ai_search_leads")
       await db.collection("ai_search_leads").where({ id }).update({ email_sent: true, email_sent_at: nowIso() })
     } else {
       const sb = await getSupabase()
