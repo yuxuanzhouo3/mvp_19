@@ -117,6 +117,11 @@ async function getLeads(userId: string) {
 }
 
 // AI 搜索：调用 web search + LLM 提取
+// 清理非 UTF-8 字符
+function cleanUTF8(str: string): string {
+  return str.replace(/[\u0000-\u001F\u007F-\u009F\uD800-\uDFFF]/g, '').normalize('NFKC')
+}
+
 async function aiSearchAndExtract(query: string, type: string): Promise<{ name: string; email: string; website: string; description: string; rawContent: string }[]> {
   const typeLabel = type === "blogger" ? "博主/KOL" : type === "enterprise" ? "企业/公司" : "VC投资机构"
 
@@ -148,14 +153,16 @@ async function aiSearchAndExtract(query: string, type: string): Promise<{ name: 
     }]
   }
 
+  // 清理非 UTF-8 字符
+  const cleanQuery = cleanUTF8(query)
   const systemPrompt = `你是一个专业的商业信息搜索助手，必须通过联网搜索获取真实信息。
 
 核心任务：找到${typeLabel}的联系邮箱。
 
 搜索策略（必须按顺序执行）：
-1. 搜索「${query} 邮箱」「${query} 商务合作邮箱」「${query} 联系方式」
-2. 搜索「${query} B站 简介」「${query} 知乎 简介」「${query} 微博 简介」「${query} 抖音 简介」
-3. 搜索「${query} 官网」「${query} site:bilibili.com」「${query} site:zhihu.com」
+1. 搜索「${cleanQuery} 邮箱」「${cleanQuery} 商务合作邮箱」「${cleanQuery} 联系方式」
+2. 搜索「${cleanQuery} B站 简介」「${cleanQuery} 知乎 简介」「${cleanQuery} 微博 简介」「${cleanQuery} 抖音 简介」
+3. 搜索「${cleanQuery} 官网」「${cleanQuery} site:bilibili.com」「${cleanQuery} site:zhihu.com」
 4. 查找各平台主页简介中的邮箱（格式如 xxx@xxx.com 或 xxx@qq.com）
 
 邮箱提取规则：
@@ -175,7 +182,7 @@ async function aiSearchAndExtract(query: string, type: string): Promise<{ name: 
   }
 ]`
 
-  const userPrompt = `联网搜索${typeLabel}「${query}」的邮箱和联系方式，重点搜索 B站、知乎、微博、抖音、官网等平台的简介页面，提取其中的邮箱地址。最多返回5条结果。`
+  const userPrompt = `联网搜索${typeLabel}「${cleanQuery}」的邮箱和联系方式，重点搜索 B站、知乎、微博、抖音、官网等平台的简介页面，提取其中的邮箱地址。最多返回5条结果。`
 
   const body: Record<string, unknown> = {
     model,
