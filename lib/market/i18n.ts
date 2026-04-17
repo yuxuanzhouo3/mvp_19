@@ -1,4 +1,13 @@
-const isIntl = (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() !== "cn"
+// 默认使用中文，除非明确设置为国际版
+const siteRegion = process.env.NEXT_PUBLIC_SITE_REGION || "cn"
+const isIntl = siteRegion.toLowerCase() !== "cn"
+
+// 调试信息
+console.log('Language setting:', {
+  siteRegion,
+  isIntl,
+  language: isIntl ? 'English' : '中文'
+})
 
 type Dict = Record<string, string>
 
