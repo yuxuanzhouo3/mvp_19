@@ -43,9 +43,26 @@ export default function AISearchPage() {
     setLoading(true)
     try {
       const res = await fetch("/api/market/ai-search", { credentials: "include" })
-      const json = await res.json()
-      if (json.ok) { setLeads(json.data || []); if (json.quota) setUsage(json.quota) }
-    } catch {}
+      // 检查响应头字符集
+      const contentType = res.headers.get('content-type') || ''
+      if (!contentType.includes('charset=utf-8') && !contentType.includes('charset=UTF-8')) {
+        console.warn('[AI搜索] 响应字符集不是UTF-8:', contentType)
+      }
+      const text = await res.text()
+      try {
+        const json = JSON.parse(text)
+        if (json.ok) {
+          setLeads(json.data || []);
+          if (json.quota) setUsage(json.quota)
+        }
+      } catch (parseError) {
+        console.error('[AI搜索] JSON解析错误:', parseError, '响应文本:', text.substring(0, 200))
+        setError('数据格式错误，请刷新重试')
+      }
+    } catch (fetchError) {
+      console.error('[AI搜索] 请求错误:', fetchError)
+      setError('加载失败，请检查网络连接')
+    }
     finally { setLoading(false) }
   }
 
@@ -59,15 +76,24 @@ export default function AISearchPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: query.trim(), type })
       })
-      const json = await res.json()
-      if (json.ok) {
-        if (json.quota) setUsage(json.quota)
-        showToast(`✅ 搜索完成，找到 ${json.data?.length || 0} 条结果（剩余约 ${json.quota?.remainingCalls ?? usage.remainingCalls} 次）`)
-        await loadLeads()
-      } else {
-        setError(json.message || "搜索失败")
+      const text = await res.text()
+      try {
+        const json = JSON.parse(text)
+        if (json.ok) {
+          if (json.quota) setUsage(json.quota)
+          showToast(`✅ 搜索完成，找到 ${json.data?.length || 0} 条结果（剩余约 ${json.quota?.remainingCalls ?? usage.remainingCalls} 次）`)
+          await loadLeads()
+        } else {
+          setError(json.message || "搜索失败")
+        }
+      } catch (parseError) {
+        console.error('[AI搜索] 搜索响应JSON解析错误:', parseError, '响应文本:', text.substring(0, 200))
+        setError('搜索结果格式错误，请重试')
       }
-    } catch { setError("搜索失败，请重试") }
+    } catch (fetchError) {
+      console.error('[AI搜索] 搜索请求错误:', fetchError)
+      setError('搜索失败，请重试')
+    }
     finally { setSearching(false) }
   }
 
