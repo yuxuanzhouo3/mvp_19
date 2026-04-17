@@ -11,8 +11,9 @@ import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, Phone, MessageSquare, Loa
 
 declare global { interface Window { google?: any } }
 
-const isIntl = (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() !== "cn"
-const isCN   = !isIntl
+// 强制锁定为国内版
+const isIntl = false
+const isCN   = true
 
 const t = {
   back:           isIntl ? "Back to home"              : "返回首页",
