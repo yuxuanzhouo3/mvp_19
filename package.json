@@ -6,7 +6,7 @@
     "build": "node scripts/build.mjs",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "node server.js"
   },
   "dependencies": {
     "@cloudbase/node-sdk": "^3.18.1",
