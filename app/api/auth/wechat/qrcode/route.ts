@@ -3,14 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 /**
  * GET /api/auth/wechat/qrcode
  * 生成微信扫码登录二维码 URL
- * 仅国内版（NEXT_PUBLIC_SITE_REGION=cn）可用
+ * 仅国内版可用（已强制锁定为国内版）
  */
 export async function GET(request: NextRequest) {
-  const region = process.env.NEXT_PUBLIC_SITE_REGION || "cn"
-  if (region.toLowerCase() !== "cn") {
-    return NextResponse.json({ ok: false, message: "仅国内版支持微信登录" }, { status: 403 })
-  }
-
+  // 强制锁定为国内版，移除区域检查
   const appId = process.env.NEXT_PUBLIC_WECHAT_APP_ID
   if (!appId) {
     return NextResponse.json({ ok: false, message: "微信 AppID 未配置" }, { status: 500 })
