@@ -1,4 +1,4 @@
-﻿﻿"use client"
+﻿﻿﻿﻿"use client"
 import { useState, useEffect, Suspense } from 'react'
 import { useUser } from '@/lib/auth/use-user'
 import { Button } from '@/components/ui/button'
