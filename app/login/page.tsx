@@ -44,8 +44,7 @@ export default function LoginPage() {
   const router = useRouter()
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-  // 强制显示微信登录按钮（不检查环境变量）
-  const wechatAppId    = "wx48a648f967ee565f"
+  const wechatAppId    = process.env.NEXT_PUBLIC_WECHAT_APP_ID
 
   useEffect(() => {
     if (smsCountdown <= 0) return

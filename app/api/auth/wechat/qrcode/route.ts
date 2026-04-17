@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   // 强制锁定为国内版，移除区域检查
   const appId = process.env.NEXT_PUBLIC_WECHAT_APP_ID
   if (!appId) {
-    return NextResponse.json({ ok: false, message: "微信 AppID 未配置" }, { status: 500 })
+    return NextResponse.json({ ok: false, message: "微信 AppID 未配置，请联系管理员" }, { status: 500 })
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
