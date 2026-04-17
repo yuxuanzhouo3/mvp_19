@@ -49,74 +49,47 @@ async function ensureCollection(db: any, collectionName: string) {
   }
 }
 
-// 通用额度操作（国内/国外）
+// 通用额度操作（强制使用国内版）
 async function getQuota(userId: string) {
-  const { isCN } = await import("@/lib/db-adapter")
-  if (isCN()) {
-    const db = await getCB()
-    await ensureCollection(db, "ai_search_quota")
-    try {
-      const r = await db.collection("ai_search_quota").where({ user_id: userId }).get()
-      return r?.data?.[0] || null
-    } catch { return null }
-  }
-  const sb = await getSupabase()
-  const { data } = await sb.from("ai_search_quota").select("*").eq("user_id", userId).maybeSingle()
-  return data
+  // 强制使用国内版
+  const db = await getCB()
+  await ensureCollection(db, "ai_search_quota")
+  try {
+    const r = await db.collection("ai_search_quota").where({ user_id: userId }).get()
+    return r?.data?.[0] || null
+  } catch { return null }
 }
 
 async function upsertQuota(userId: string, quota: any, patch: Record<string, any>) {
-  const { isCN } = await import("@/lib/db-adapter")
-  if (isCN()) {
-    const db = await getCB()
-    await ensureCollection(db, "ai_search_quota")
-    if (quota?._id) {
-      await db.collection("ai_search_quota").doc(quota._id).update({ ...patch, updated_at: nowIso() })
-    } else {
-      await db.collection("ai_search_quota").add({ id: `quota-${randomUUID().slice(0,8)}`, user_id: userId, balance: 0.1, total_used: 0, call_count: 0, created_at: nowIso(), ...patch, updated_at: nowIso() })
-    }
-    return
-  }
-  const sb = await getSupabase()
-  if (quota) {
-    await sb.from("ai_search_quota").update({ ...patch, updated_at: nowIso() }).eq("user_id", userId)
+  // 强制使用国内版
+  const db = await getCB()
+  await ensureCollection(db, "ai_search_quota")
+  if (quota?._id) {
+    await db.collection("ai_search_quota").doc(quota._id).update({ ...patch, updated_at: nowIso() })
   } else {
-    await sb.from("ai_search_quota").upsert({ id: `quota-${randomUUID().slice(0,8)}`, user_id: userId, balance: 0.1, total_used: 0, call_count: 0, created_at: nowIso(), ...patch, updated_at: nowIso() }, { onConflict: "user_id" })
+    await db.collection("ai_search_quota").add({ id: `quota-${randomUUID().slice(0,8)}`, user_id: userId, balance: 0.1, total_used: 0, call_count: 0, created_at: nowIso(), ...patch, updated_at: nowIso() })
   }
 }
 
 async function insertLeads(rows: any[]) {
-  const { isCN } = await import("@/lib/db-adapter")
-  if (isCN()) {
-    const db = await getCB()
-    await ensureCollection(db, "ai_search_leads")
-    for (const row of rows) await db.collection("ai_search_leads").add(row)
-    return rows
-  }
-  const sb = await getSupabase()
-  const { data, error } = await sb.from("ai_search_leads").insert(rows).select()
-  if (error) throw new Error(error.message)
-  return data
+  // 强制使用国内版
+  const db = await getCB()
+  await ensureCollection(db, "ai_search_leads")
+  for (const row of rows) await db.collection("ai_search_leads").add(row)
+  return rows
 }
 
 async function getLeads(userId: string) {
-  const { isCN } = await import("@/lib/db-adapter")
-  if (isCN()) {
-    const db = await getCB()
-    await ensureCollection(db, "ai_search_leads")
-    try {
-      await db.collection("ai_search_leads").where({ expires_at: db.command.lt(nowIso()) }).remove().catch(() => {})
-      const r = await db.collection("ai_search_leads").where({ user_id: userId }).get()
-      return Array.isArray(r?.data) ? r.data.sort((a: any, b: any) => b.created_at > a.created_at ? 1 : -1) : []
-    } catch { return [] }
-  }
-  const sb = await getSupabase()
-  await sb.from("ai_search_leads").delete().lt("expires_at", nowIso())
-  const { data } = await sb.from("ai_search_leads").select("*").eq("user_id", userId).order("created_at", { ascending: false })
-  return data || []
+  // 强制使用国内版
+  const db = await getCB()
+  await ensureCollection(db, "ai_search_leads")
+  try {
+    await db.collection("ai_search_leads").where({ expires_at: db.command.lt(nowIso()) }).remove().catch(() => {})
+    const r = await db.collection("ai_search_leads").where({ user_id: userId }).get()
+    return Array.isArray(r?.data) ? r.data.sort((a: any, b: any) => b.created_at > a.created_at ? 1 : -1) : []
+  } catch { return [] }
 }
 
-// AI 搜索：调用 web search + LLM 提取
 // 清理非 UTF-8 字符
 function cleanUTF8(str: string): string {
   return str.replace(/[\u0000-\u001F\u007F-\u009F\uD800-\uDFFF]/g, '').normalize('NFKC')
@@ -314,7 +287,8 @@ export async function POST(req: NextRequest) {
       }
     })
   } catch (e: any) {
-    return NextResponse.json({ ok: false, message: e.message }, { status: 500 })
+    console.error("[ai-search POST error]", e)
+    return NextResponse.json({ ok: false, message: e.message || "搜索失败，请重试" }, { status: 500 })
   }
 }
 
@@ -345,7 +319,8 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (e: any) {
-    return NextResponse.json({ ok: false, message: e.message }, { status: 500 })
+    console.error("[ai-search GET error]", e)
+    return NextResponse.json({ ok: false, message: e.message || "加载失败，请重试" }, { status: 500 })
   }
 }
 
@@ -354,18 +329,14 @@ export async function DELETE(req: NextRequest) {
   if (!userId) return NextResponse.json({ ok: false, message: "未登录" }, { status: 401 })
   const { id } = await req.json()
   try {
-    const { isCN } = await import("@/lib/db-adapter")
-    if (isCN()) {
-      const db = await getCB()
-      await ensureCollection(db, "ai_search_leads")
-      await db.collection("ai_search_leads").where({ id, user_id: userId }).remove()
-    } else {
-      const sb = await getSupabase()
-      await sb.from("ai_search_leads").delete().eq("id", id).eq("user_id", userId)
-    }
+    // 强制使用国内版
+    const db = await getCB()
+    await ensureCollection(db, "ai_search_leads")
+    await db.collection("ai_search_leads").where({ id, user_id: userId }).remove()
     return NextResponse.json({ ok: true })
   } catch (e: any) {
-    return NextResponse.json({ ok: false, message: e.message }, { status: 500 })
+    console.error("[ai-search DELETE error]", e)
+    return NextResponse.json({ ok: false, message: e.message || "删除失败，请重试" }, { status: 500 })
   }
 }
 
@@ -374,18 +345,13 @@ export async function PATCH(req: NextRequest) {
   if (!userId) return NextResponse.json({ ok: false, message: "未登录" }, { status: 401 })
   const { id, message: emailMessage, subject, toEmail } = await req.json()
   try {
-    const { isCN } = await import("@/lib/db-adapter")
+    // 强制使用国内版
     let lead: any = null
-    if (isCN()) {
-      const db = await getCB()
-      await ensureCollection(db, "ai_search_leads")
-      const r = await db.collection("ai_search_leads").where({ id, user_id: userId }).get()
-      lead = r?.data?.[0]
-    } else {
-      const sb = await getSupabase()
-      const { data: rows } = await sb.from("ai_search_leads").select("*").eq("id", id).eq("user_id", userId)
-      lead = rows?.[0]
-    }
+    const db = await getCB()
+    await ensureCollection(db, "ai_search_leads")
+    const r = await db.collection("ai_search_leads").where({ id, user_id: userId }).get()
+    lead = r?.data?.[0]
+
     if (!lead) return NextResponse.json({ ok: false, message: "记录不存在" }, { status: 404 })
     const targetEmail = toEmail || lead.email
     if (!targetEmail) return NextResponse.json({ ok: false, message: "请填写收件邮箱" }, { status: 400 })
@@ -396,17 +362,10 @@ export async function PATCH(req: NextRequest) {
       body: emailMessage || `您好！\n\n我们对您的业务非常感兴趣，希望能与您建立合作关系。\n\n期待您的回复！`,
     })
 
-    if (isCN()) {
-      const db = await getCB()
-      await ensureCollection(db, "ai_search_leads")
-      await db.collection("ai_search_leads").where({ id }).update({ email_sent: true, email_sent_at: nowIso() })
-    } else {
-      const sb = await getSupabase()
-      await sb.from("ai_search_leads").update({ email_sent: true, email_sent_at: nowIso() }).eq("id", id)
-    }
+    await db.collection("ai_search_leads").where({ id }).update({ email_sent: true, email_sent_at: nowIso() })
     return NextResponse.json({ ok: true, message: "邮件已发送" })
   } catch (e: any) {
-    console.error("[ai-search PATCH error]", e.message)
-    return NextResponse.json({ ok: false, message: e.message }, { status: 500 })
+    console.error("[ai-search PATCH error]", e)
+    return NextResponse.json({ ok: false, message: e.message || "发送失败，请重试" }, { status: 500 })
   }
 }
