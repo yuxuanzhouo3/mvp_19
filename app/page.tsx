@@ -26,10 +26,8 @@ import {
 
 export default function HomePage() {
   const [isDark, setIsDark] = useState(false)
-  const regionMode = (process.env.NEXT_PUBLIC_SITE_REGION ?? "auto").toLowerCase()
-  const [lang, setLang] = useState<"en" | "zh">(() =>
-    regionMode === "cn" ? "zh" : "en",
-  )
+  // 强制锁定为中文
+  const lang = "zh" as const
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [aiQuota, setAiQuota] = useState<{ remainingCalls: number; balance: number } | null>(null)
@@ -240,9 +238,8 @@ export default function HomePage() {
     { icon: ArrowRight, name: "mornfake", cn: "https://mornfake.mornscience.top", intl: "https://www.mornhub.pics" },
     { icon: Users, name: "mornhome", cn: "https://mornhome.mornscience.top", intl: "https://mornhub.homes/" },
   ]
-  const isCnRegion = regionMode === "cn" ? true : regionMode === "intl" ? false : lang === "zh"
-  const regionLabel =
-    regionMode === "cn" ? "CN" : regionMode === "intl" ? "INTL" : lang === "zh" ? "CN (AUTO)" : "INTL (AUTO)"
+  // 强制使用中文区域
+  const isCnRegion = true
 
   return (
     <div className={isDark ? "dark" : ""}>
@@ -273,14 +270,11 @@ export default function HomePage() {
 
             {/* Controls - rightmost */}
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => setLang(lang === "en" ? "zh" : "en")}>
-                <Globe className="w-5 h-5" />
-              </Button>
               <Button variant="ghost" size="icon" onClick={toggleTheme}>
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </Button>
               <span className="hidden sm:inline-flex items-center rounded-md border border-border/40 px-2 py-1 text-[11px] text-muted-foreground">
-                {regionLabel}
+                CN
               </span>
               {user ? (
                 <DropdownMenu>
