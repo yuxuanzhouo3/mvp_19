@@ -46,6 +46,17 @@ export default function LoginPage() {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
   const wechatAppId    = process.env.NEXT_PUBLIC_WECHAT_APP_ID
 
+  // 调试信息
+  useEffect(() => {
+    console.log('[Login Debug]', {
+      isCN,
+      wechatAppId,
+      siteRegion: process.env.NEXT_PUBLIC_SITE_REGION,
+      nodeEnv: process.env.NODE_ENV,
+      showWechat: isCN && !!wechatAppId
+    })
+  }, [])
+
   useEffect(() => {
     if (smsCountdown <= 0) return
     const t = setTimeout(() => setSmsCountdown(c => c - 1), 1000)
