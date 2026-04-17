@@ -20,10 +20,9 @@ export type DeploymentRegion = "CN" | "INTL"
 // ==========================================
 // Config & Helpers
 // ==========================================
-// 根据环境变量动态决定区域，不再硬编码
+// 强制锁定为国内区域
 function getRegion(): DeploymentRegion {
-  const r = (process.env.NEXT_PUBLIC_SITE_REGION || process.env.SITE_REGION || "intl").toLowerCase()
-  return r === "cn" ? "CN" : "INTL"
+  return "CN"
 }
 
 const DATA_DIR = typeof window === 'undefined' ? require('path').join(process.cwd(), "data", "acquisition") : ""
