@@ -10,6 +10,23 @@ SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-""}
 SUPABASE_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-""}
 STRIPE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-""}
 
+# AI API密钥
+ALIYUN_DASHSCOPE_API_KEY=${ALIYUN_DASHSCOPE_API_KEY:-""}
+OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-""}
+
+# 数据库配置
+CLOUDBASE_ENV_ID=${CLOUDBASE_ENV_ID:-""}
+CLOUDBASE_SECRET_ID=${CLOUDBASE_SECRET_ID:-""}
+CLOUDBASE_SECRET_KEY=${CLOUDBASE_SECRET_KEY:-""}
+SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-""}
+
+# 其他服务密钥
+TENCENT_SMS_SECRET_ID=${TENCENT_SMS_SECRET_ID:-""}
+TENCENT_SMS_SECRET_KEY=${TENCENT_SMS_SECRET_KEY:-""}
+WECHAT_APP_SECRET=${WECHAT_APP_SECRET:-""}
+JWT_SECRET=${JWT_SECRET:-""}
+ADMIN_SESSION_SECRET=${ADMIN_SESSION_SECRET:-""}
+
 # 检查必要参数
 if [ -z "$WECHAT_APP_ID" ] && [ "$SITE_REGION" = "cn" ]; then
   echo "警告: 国内环境(cn)但未设置微信AppID，微信登录将不可用"
@@ -19,11 +36,21 @@ if [ -z "$APP_URL" ]; then
   echo "警告: 未设置APP_URL，某些功能可能受影响"
 fi
 
+if [ -z "$ALIYUN_DASHSCOPE_API_KEY" ] && [ -z "$OPENROUTER_API_KEY" ]; then
+  echo "警告: 未设置AI API密钥，AI搜索将返回模拟数据"
+fi
+
+if [ "$SITE_REGION" = "cn" ] && [ -z "$CLOUDBASE_ENV_ID" ]; then
+  echo "警告: 国内环境但未设置CloudBase配置，数据库功能可能受影响"
+fi
+
 # 构建命令
 echo "正在构建Docker镜像，使用以下参数:"
 echo "  SITE_REGION: $SITE_REGION"
 echo "  WECHAT_APP_ID: ${WECHAT_APP_ID:-(未设置)}"
 echo "  APP_URL: ${APP_URL:-(未设置)}"
+echo "  AI_API_KEY_SET: $([ -n "$ALIYUN_DASHSCOPE_API_KEY" ] || [ -n "$OPENROUTER_API_KEY" ] && echo "是" || echo "否")"
+echo "  CLOUDBASE_SET: $([ -n "$CLOUDBASE_ENV_ID" ] && echo "是" || echo "否")"
 
 docker build \
   --build-arg NEXT_PUBLIC_SITE_REGION="$SITE_REGION" \
@@ -33,6 +60,17 @@ docker build \
   --build-arg NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL" \
   --build-arg NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$SUPABASE_KEY" \
   --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="$STRIPE_KEY" \
+  --build-arg ALIYUN_DASHSCOPE_API_KEY="$ALIYUN_DASHSCOPE_API_KEY" \
+  --build-arg OPENROUTER_API_KEY="$OPENROUTER_API_KEY" \
+  --build-arg CLOUDBASE_ENV_ID="$CLOUDBASE_ENV_ID" \
+  --build-arg CLOUDBASE_SECRET_ID="$CLOUDBASE_SECRET_ID" \
+  --build-arg CLOUDBASE_SECRET_KEY="$CLOUDBASE_SECRET_KEY" \
+  --build-arg SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  --build-arg TENCENT_SMS_SECRET_ID="$TENCENT_SMS_SECRET_ID" \
+  --build-arg TENCENT_SMS_SECRET_KEY="$TENCENT_SMS_SECRET_KEY" \
+  --build-arg WECHAT_APP_SECRET="$WECHAT_APP_SECRET" \
+  --build-arg JWT_SECRET="$JWT_SECRET" \
+  --build-arg ADMIN_SESSION_SECRET="$ADMIN_SESSION_SECRET" \
   -t mornbusiness:latest .
 
 echo "构建完成"
