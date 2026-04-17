@@ -26,7 +26,8 @@ interface UserAvatarDropdownProps {
 
 export function UserAvatarDropdown({ user, onLogout }: UserAvatarDropdownProps) {
   const router = useRouter()
-  const isZh = (process.env.NEXT_PUBLIC_SITE_REGION ?? "auto").toLowerCase() === "cn"
+  // 强制锁定为国内版
+  const isZh = true
 
   const handleLogout = async () => {
     try {

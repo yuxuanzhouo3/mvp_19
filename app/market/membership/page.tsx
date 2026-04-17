@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, Check, Zap, Crown, Loader2, Tag, AlertCircle, CreditCard } from "lucide-react"
@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-const isCN = (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() === "cn"
+// 强制锁定为国内版
+const isCN = true
 
 type Plan = {
   id: string; name: string; region: string; duration: string

@@ -7,9 +7,9 @@
  */
 
 // ── 判断当前区域 ──────────────────────────────────────
+// 强制锁定为国内版
 export function isCN(): boolean {
-  const region = process.env.NEXT_PUBLIC_SITE_REGION || process.env.SITE_REGION || "intl"
-  return region.toLowerCase() === "cn"
+  return true
 }
 
 function nowIso() {

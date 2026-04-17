@@ -9,7 +9,8 @@ import { toast } from "@/hooks/use-toast"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, UserPlus, ShieldCheck, Loader2 } from "lucide-react"
 
-const isCN = (process.env.NEXT_PUBLIC_SITE_REGION ?? "auto").toLowerCase() === "cn"
+// 强制锁定为国内版
+const isCN = true
 
 function RegisterForm() {
   const [loading, setLoading] = useState(false)
