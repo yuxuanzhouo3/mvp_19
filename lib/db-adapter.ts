@@ -7,9 +7,9 @@
  */
 
 // ── 判断当前区域 ──────────────────────────────────────
-// 根据环境变量确定地域
+// 强制锁定为国内版
 export function isCN(): boolean {
-  return (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() === "cn"
+  return true
 }
 
 function nowIso() {
