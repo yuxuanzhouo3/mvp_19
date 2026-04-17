@@ -8,6 +8,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    runtimeEnv: true,
+  },
   // 这些包只在服务端使用
   serverExternalPackages: ['@cloudbase/node-sdk'],
   webpack: (config, { isServer }) => {
