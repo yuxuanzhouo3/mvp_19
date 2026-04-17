@@ -9,8 +9,8 @@ import { toast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { Sparkles, ArrowLeft, Mail, Lock, ShieldCheck, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react"
 
-// 强制锁定为国内版
-const isCN = true
+// 根据环境变量确定地域
+const isCN = (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() === "cn"
 
 export default function ForgotPasswordPage() {
   const router = useRouter()

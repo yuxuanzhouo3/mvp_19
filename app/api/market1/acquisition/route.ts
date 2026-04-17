@@ -17,7 +17,7 @@ async function getCB() {
   return app.database()
 }
 
-const isCN = () => (process.env.NEXT_PUBLIC_SITE_REGION || "intl").toLowerCase() === "cn"
+const isCN = () => (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() === "cn"
 
 // ── generic DB helpers ────────────────────────────────
 async function dbInsert(table: string, row: Record<string, any>) {

@@ -1,5 +1,5 @@
-// 强制锁定为中文语言（不考虑任何环境变量）
-const isIntl = false
+// 根据环境变量确定地域
+const isIntl = (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() !== "cn"
 
 type Dict = Record<string, string>
 

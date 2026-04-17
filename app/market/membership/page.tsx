@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-// 强制锁定为国内版
-const isCN = true
+// 根据环境变量确定地域
+const isCN = (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() === "cn"
 
 type Plan = {
   id: string; name: string; region: string; duration: string
