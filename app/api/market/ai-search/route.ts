@@ -64,10 +64,26 @@ async function upsertQuota(userId: string, quota: any, patch: Record<string, any
   // 强制使用国内版
   const db = await getCB()
   await ensureCollection(db, "ai_search_quota")
+  
+  // 清理补丁数据中的所有字符串
+  const cleanedPatch: Record<string, any> = {}
+  for (const [key, value] of Object.entries(patch)) {
+    cleanedPatch[key] = typeof value === 'string' ? cleanUTF8(value) : value
+  }
+  
   if (quota?._id) {
-    await db.collection("ai_search_quota").doc(quota._id).update({ ...patch, updated_at: nowIso() })
+    await db.collection("ai_search_quota").doc(quota._id).update({ ...cleanedPatch, updated_at: nowIso() })
   } else {
-    await db.collection("ai_search_quota").add({ id: `quota-${randomUUID().slice(0,8)}`, user_id: userId, balance: 0.1, total_used: 0, call_count: 0, created_at: nowIso(), ...patch, updated_at: nowIso() })
+    await db.collection("ai_search_quota").add({ 
+      id: cleanUTF8(`quota-${randomUUID().slice(0,8)}`), 
+      user_id: cleanUTF8(userId), 
+      balance: 0.1, 
+      total_used: 0, 
+      call_count: 0, 
+      created_at: nowIso(), 
+      ...cleanedPatch, 
+      updated_at: nowIso() 
+    })
   }
 }
 
@@ -75,7 +91,22 @@ async function insertLeads(rows: any[]) {
   // 强制使用国内版
   const db = await getCB()
   await ensureCollection(db, "ai_search_leads")
-  for (const row of rows) await db.collection("ai_search_leads").add(row)
+  for (const row of rows) {
+    // 清理所有字符串字段中的非 UTF-8 字符
+    const cleanedRow = {
+      ...row,
+      id: cleanUTF8(row.id || ""),
+      user_id: cleanUTF8(row.user_id || ""),
+      query: cleanUTF8(row.query || ""),
+      name: cleanUTF8(row.name || ""),
+      email: cleanUTF8(row.email || ""),
+      website: cleanUTF8(row.website || ""),
+      description: cleanUTF8(row.description || ""),
+      type: cleanUTF8(row.type || ""),
+      raw_content: cleanUTF8(row.raw_content || ""),
+    }
+    await db.collection("ai_search_leads").add(cleanedRow)
+  }
   return rows
 }
 
@@ -92,7 +123,27 @@ async function getLeads(userId: string) {
 
 // 清理非 UTF-8 字符
 function cleanUTF8(str: string): string {
-  return str.replace(/[\u0000-\u001F\u007F-\u009F\uD800-\uDFFF]/g, '').normalize('NFKC')
+  if (!str) return ""
+  try {
+    // 先尝试直接清理
+    let cleaned = str
+      // 替换控制字符
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+      // 替换代理对（未配对的 UTF-16 代理）
+      .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '')
+      .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
+      // 规范化
+      .normalize('NFKC')
+    
+    // 确保只保留可打印字符
+    cleaned = cleaned.replace(/[^\x20-\x7E\u4E00-\u9FFF\u3400-\u4DBF\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF]/g, '')
+    
+    // 如果清理后为空，返回安全的空字符串
+    return cleaned || ""
+  } catch {
+    // 如果清理过程出错，返回安全的空字符串
+    return ""
+  }
 }
 
 async function aiSearchAndExtract(query: string, type: string): Promise<{ name: string; email: string; website: string; description: string; rawContent: string }[]> {
@@ -205,13 +256,13 @@ async function aiSearchAndExtract(query: string, type: string): Promise<{ name: 
     const results = JSON.parse(jsonStr.trim())
     if (!Array.isArray(results) || results.length === 0) return []
     return results.map((r: any) => ({
-      name: String(r.name || ""),
-      email: String(r.email || ""),
-      website: String(r.website || ""),
-      description: r.email
+      name: cleanUTF8(String(r.name || "")),
+      email: cleanUTF8(String(r.email || "")),
+      website: cleanUTF8(String(r.website || "")),
+      description: cleanUTF8(r.email
         ? `${String(r.description || "")}${r.emailSource === "推断" ? "【邮箱为推断】" : ""}`
-        : (r.emailNote || "暂无公开邮箱，请手动填写"),
-      rawContent: content,
+        : (r.emailNote || "暂无公开邮箱，请手动填写")),
+      rawContent: cleanUTF8(content),
     }))
   } catch (e) {
     console.error("[ai-search] JSON parse error:", e, "content:", content.slice(0, 200))
