@@ -60,16 +60,14 @@ export default function LoginPage() {
     }
   }, [isMiniProgram])
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-  const wechatAppId    = process.env.NEXT_PUBLIC_WECHAT_APP_ID
 
   // 调试信息
   useEffect(() => {
     console.log('[Login Debug]', {
       isCN,
-      wechatAppId,
+      googleClientId,
       siteRegion: process.env.NEXT_PUBLIC_SITE_REGION,
-      nodeEnv: process.env.NODE_ENV,
-      showWechat: isCN && !!wechatAppId
+      nodeEnv: process.env.NODE_ENV
     })
   }, [])
 
@@ -230,33 +228,10 @@ export default function LoginPage() {
         })
         .catch(() => toast({ title: t.loginFailed, variant: "destructive" }))
     }
-    // 微信登录回调处理
-    const wechatCode = params.get("code")
-    const wechatState = params.get("state")
-    if (wechatCode && wechatState?.startsWith("wx_")) {
-      fetch("/api/auth/wechat/callback", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: wechatCode }),
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.ok) {
-            localStorage.setItem("market_user", JSON.stringify({
-              userId: data.user.userId, email: data.user.email,
-              nickname: data.user.profile?.nickname || data.user.nickname || "微信用户",
-              avatar: data.user.profile?.avatar || "",
-            }))
-            toast({ title: "微信登录成功" })
-            window.location.href = "/"
-          } else {
-            toast({ title: data.message || "微信登录失败", variant: "destructive" })
-          }
-        })
-        .catch(() => toast({ title: "微信登录失败", variant: "destructive" }))
-    }
+
   }, [])
 
-  const showThirdParty = (isIntl && !!googleClientId) || (isCN && !!wechatAppId)
+  const showThirdParty = isIntl && !!googleClientId
 
   return (
     <div className="min-h-screen bg-gradient-hero relative overflow-hidden">
@@ -377,7 +352,6 @@ export default function LoginPage() {
                           {t.googleBtn}
                         </button>
                       )}
-                      {isCN && wechatAppId && <WechatLoginButton />}
                     </div>
                   </div>
                 </>
@@ -406,58 +380,4 @@ export default function LoginPage() {
   )
 }
 
-// ── 微信登录按钮（仅国内版）────────────────────────────
-function WechatLoginButton() {
-  const [loading, setLoading] = useState(false)
-  const [qrcodeUrl, setQrcodeUrl] = useState("")
-  const [showQr, setShowQr] = useState(false)
 
-  const handleClick = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/auth/wechat/qrcode")
-      const json = await res.json()
-      if (json.ok && json.data?.qrcodeUrl) {
-        setQrcodeUrl(json.data.qrcodeUrl)
-        setShowQr(true)
-      } else {
-        alert(json.message || "获取微信登录二维码失败")
-      }
-    } catch {
-      alert("获取微信登录二维码失败，请重试")
-    }
-    finally { setLoading(false) }
-  }
-
-  return (
-    <>
-      <button type="button" onClick={handleClick} disabled={loading}
-        className="w-full h-12 rounded-full border border-slate-200 bg-white/70 hover:bg-white text-slate-700 text-sm font-medium flex items-center justify-center gap-3 transition-all hover:-translate-y-0.5 disabled:opacity-50 shadow-sm mt-3">
-        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-[#07C160]">
-          <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-7.062-6.122zm-3.74 2.632c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm5.4 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z"/>
-        </svg>
-        {loading ? "获取二维码中..." : "微信扫码登录"}
-      </button>
-
-      {showQr && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-          <div className="w-full max-w-xs rounded-3xl p-6 text-center" style={{
-            background: "linear-gradient(135deg,rgba(255,255,255,0.96) 0%,rgba(239,246,255,0.92) 100%)",
-            backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.7)",
-            boxShadow: "0 25px 50px rgba(7,193,96,0.2)",
-          }}>
-            <h3 className="font-bold text-slate-800 mb-1">微信扫码登录</h3>
-            <p className="text-xs text-slate-400 mb-4">使用微信扫描下方二维码</p>
-            <div className="flex justify-center mb-4">
-              <iframe src={qrcodeUrl} className="w-[200px] h-[200px] border-0 rounded-xl" scrolling="no" title="微信登录二维码" />
-            </div>
-            <button onClick={() => setShowQr(false)}
-              className="w-full h-10 rounded-full border border-slate-200 text-slate-500 text-sm hover:bg-slate-50 transition-colors">
-              取消
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
