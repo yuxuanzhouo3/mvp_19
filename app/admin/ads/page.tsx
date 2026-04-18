@@ -603,7 +603,7 @@ export default function AdsManagementPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredAds.map((ad) => (
-                      <TableRow key={ad.id}>
+                      <TableRow key={ad.id || ad._id}>
                         <TableCell>
                           <Button
                             variant="ghost"
