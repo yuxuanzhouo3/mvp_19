@@ -628,7 +628,7 @@ export default function AdsManagementPage() {
                         <TableCell>
                           <div className="font-medium text-sm">{ad.title}</div>
                           <div className="text-xs text-muted-foreground">
-                            ID: {ad.id.slice(0, 8)}...
+                            ID: {ad.id ? ad.id.slice(0, 8) : ad._id ? ad._id.slice(0, 8) : '-'}...
                           </div>
                         </TableCell>
                         <TableCell>
