@@ -7,9 +7,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
+import { usePlatform } from "@/lib/hooks/usePlatform"
 import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, Phone, MessageSquare, Loader2 } from "lucide-react"
 
-declare global { interface Window { google?: any } }
+declare global { 
+  interface Window { 
+    google?: any
+    wx?: any
+    __wxjs_environment?: string
+  } 
+}
 
 // 根据环境变量确定地域
 const isCN = (process.env.NEXT_PUBLIC_SITE_REGION || "cn").toLowerCase() === "cn"
@@ -36,13 +43,22 @@ const t = {
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [loginTab, setLoginTab] = useState<"email" | "sms">("email")
+  const [loginTab, setLoginTab] = useState<"email" | "sms">((isCN) ? "email" : "email")
   const [phone, setPhone] = useState("")
   const [smsCode, setSmsCode] = useState("")
   const [smsSending, setSmsSending] = useState(false)
   const [smsCountdown, setSmsCountdown] = useState(0)
   const router = useRouter()
 
+  const { isMiniProgram, isWeb } = usePlatform()
+
+  // 初始化登录方式
+  useEffect(() => {
+    if (isMiniProgram) {
+      // 小程序环境自动使用微信登录
+      handleMiniProgramLogin()
+    }
+  }, [isMiniProgram])
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
   const wechatAppId    = process.env.NEXT_PUBLIC_WECHAT_APP_ID
 
@@ -62,6 +78,52 @@ export default function LoginPage() {
     const t = setTimeout(() => setSmsCountdown(c => c - 1), 1000)
     return () => clearTimeout(t)
   }, [smsCountdown])
+
+  // 小程序登录处理
+  const handleMiniProgramLogin = async () => {
+    if (!isMiniProgram || !window.wx) return
+    
+    setLoading(true)
+    try {
+      // 调用微信小程序登录
+      window.wx.login({
+        success: async (res: any) => {
+          if (res.code) {
+            // 发送 code 到后端进行登录
+            const response = await fetch("/api/auth/wechat/miniprogram", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code: res.code }),
+            })
+            
+            const data = await response.json()
+            if (data.ok) {
+              localStorage.setItem("market_user", JSON.stringify({
+                userId: data.user.userId,
+                nickname: data.user.nickname || "微信用户",
+                avatar: data.user.avatar || "",
+              }))
+              toast({ title: "微信登录成功" })
+              setTimeout(() => { router.push("/"); router.refresh() }, 800)
+            } else {
+              toast({ title: data.message || "微信登录失败", variant: "destructive" })
+            }
+          } else {
+            toast({ title: "获取微信登录凭证失败", variant: "destructive" })
+          }
+        },
+        fail: (err: any) => {
+          toast({ title: "微信登录失败: " + err.errMsg, variant: "destructive" })
+        },
+        complete: () => {
+          setLoading(false)
+        }
+      })
+    } catch (error: any) {
+      toast({ title: "微信登录失败: " + error.message, variant: "destructive" })
+      setLoading(false)
+    }
+  }
 
   const handleGoogleClick = () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
