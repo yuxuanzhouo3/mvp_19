@@ -5,9 +5,28 @@ export type PlatformType = 'web' | 'miniprogram'
 
 // 获取当前平台类型
 export function getPlatform(): PlatformType {
-  // 检测是否在微信小程序 web-view 中
+  // 方法1：检测微信环境变量
   if (typeof window !== 'undefined' && window.__wxjs_environment === 'miniprogram') {
     return 'miniprogram'
+  }
+  
+  // 方法2：检测微信 API
+  if (typeof window !== 'undefined' && window.wx && window.wx.miniProgram) {
+    return 'miniprogram'
+  }
+  
+  // 方法3：检测 userAgent
+  if (typeof window !== 'undefined' && window.navigator && 
+      window.navigator.userAgent.includes('miniProgram')) {
+    return 'miniprogram'
+  }
+
+  // 方法4：检测 URL 参数
+  if (typeof window !== 'undefined' && window.location) {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('platform') === 'miniprogram') {
+      return 'miniprogram'
+    }
   }
 
   // 默认为 web 平台
