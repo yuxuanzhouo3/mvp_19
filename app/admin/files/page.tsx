@@ -123,8 +123,12 @@ export default function FilesManagementPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : adsFiles.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">
-                  暂无广告文件
+                <div className="text-center py-10">
+                  <div className="text-muted-foreground mb-4">暂无广告文件</div>
+                  <p className="text-sm text-muted-foreground mb-4">广告文件通过广告管理页面上传和管理</p>
+                  <a href="/admin/ads" className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
+                    前往广告管理
+                  </a>
                 </div>
               ) : (
                 <div className="overflow-x-auto">

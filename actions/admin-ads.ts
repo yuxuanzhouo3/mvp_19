@@ -98,6 +98,7 @@ export async function getAdStats() {
 export async function createAd(formData: FormData) {
   try {
     const session = await requireAdminSession()
+    console.log('[createAd] session adminId:', session.adminId)
 
     const title = formData.get("title") as string
     const type = formData.get("type") as "image" | "video"
@@ -107,31 +108,48 @@ export async function createAd(formData: FormData) {
     const status = formData.get("status") as "active" | "inactive"
     const file = formData.get("file") as File
 
+    console.log('[createAd] form data:', { title, type, position, linkUrl, priority, status, file: file ? `File ${file.name} ${file.size} bytes` : 'none' })
+
     if (!title || !type || !position || !file) {
+      console.error('[createAd] missing required fields')
       return { success: false, error: "缺少必要参数" }
+    }
+
+    // 文件大小检查（限制为5MB）
+    const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+    if (file.size > MAX_FILE_SIZE) {
+      console.error('[createAd] file too large:', file.size, 'bytes')
+      return { success: false, error: "文件大小不能超过5MB" }
     }
 
     // 实现文件上传逻辑
     const ext = file.name.split(".").pop() || "jpg"
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
     const cloudPath = `advertisements/${file.type.startsWith('image') ? 'images' : 'videos'}/${fileName}`
+    console.log('[createAd] cloudPath:', cloudPath)
 
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+    console.log('[createAd] buffer size:', buffer.length)
 
     let fileUrl: string
     if (isCN()) {
+      console.log('[createAd] using CloudBase (CN)')
       const cloudbase = await import("@cloudbase/node-sdk")
       const BUCKET = process.env.CLOUDBASE_BUCKET_ID || ""
       const CDN_BASE = `https://${BUCKET}.tcb.qcloud.la`
+      console.log('[createAd] BUCKET:', BUCKET, 'CDN_BASE:', CDN_BASE)
       const app = cloudbase.init({
         env: process.env.CLOUDBASE_ENV_ID || "",
         secretId: process.env.CLOUDBASE_SECRET_ID || "",
         secretKey: process.env.CLOUDBASE_SECRET_KEY || "",
       })
+      console.log('[createAd] uploading to CloudBase...')
       await app.uploadFile({ cloudPath, fileContent: buffer })
+      console.log('[createAd] upload successful')
       fileUrl = `${CDN_BASE}/${cloudPath}`
     } else {
+      console.log('[createAd] using Supabase (INTL)')
       const { createClient } = await import("@supabase/supabase-js")
       const sb = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -145,9 +163,11 @@ export async function createAd(formData: FormData) {
       const { data } = sb.storage.from("advertisements").getPublicUrl(cloudPath)
       fileUrl = data.publicUrl
     }
+    console.log('[createAd] fileUrl:', fileUrl)
     const fileSize = file.size
 
     const now = new Date().toISOString()
+    console.log('[createAd] inserting into advertisements table...')
     const data = await dbAdapter.insertRow("advertisements", {
       title,
       type,
@@ -161,6 +181,7 @@ export async function createAd(formData: FormData) {
       click_count: 0,
       created_by: session.adminId
     })
+    console.log('[createAd] insert result:', data)
 
     return { success: true, data }
   } catch (error: any) {
