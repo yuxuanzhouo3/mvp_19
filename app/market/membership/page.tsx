@@ -79,7 +79,54 @@ function MembershipContent() {
           const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(json.codeUrl)}`
           const price = getFinalPrice(selected)
           const outTradeNo = json.outTradeNo
-          qrWin.document.write(`<html><head><style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:24px;text-align:center;background:#f8fafc}.status{padding:12px;margin-top:16px;border-radius:8px;font-size:14px}.waiting{background:#fef3c7;color:#92400e}.success{background:#d1fae5;color:#065f46}.error{background:#fee2e2;color:#991b1b}.debug{font-size:10px;color:#94a3b8;margin-top:8px;word-break:break-all}</style></head><body><h3 style="color:#1e293b;margin-bottom:8px">微信扫码支付</h3><p style="color:#64748b;margin-bottom:16px">金额：¥${price}</p><img src="${qrUrl}" style="border-radius:12px;border:1px solid #e2e8f0" /><div id="status" class="status waiting">请使用微信扫码支付</div><div id="debug" class="debug">订单号: ${outTradeNo}</div><script>let checkCount=0;function checkPayment(){checkCount++;document.getElementById('debug').textContent='第'+checkCount+'次查询，订单号: ${outTradeNo}';fetch('/api/payment/wechat/check-status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({outTradeNo:'${outTradeNo}'})}).then(r=>r.json()).then(d=>{document.getElementById('debug').textContent='查询结果: '+JSON.stringify(d);if(d.ok&&d.status==='paid'){document.getElementById('status').textContent='支付成功！正在跳转...';document.getElementById('status').className='status success';setTimeout(()=>{window.close();window.opener.location.href='/market/membership/success?payment=wechat';},1500);}else if(d.ok&&d.status==='CLOSED'){document.getElementById('status').textContent='订单已关闭';document.getElementById('status').className='status error';}else if(d.ok&&d.status==='PAYERROR'){document.getElementById('status').textContent='支付失败';document.getElementById('status').className='status error';}else if(d.ok){document.getElementById('status').textContent='状态: '+d.status+(d.originalStatus?' ('+d.originalStatus+')':'');document.getElementById('status').className='status waiting';}else{document.getElementById('status').textContent='查询错误: '+(d.message||'未知');document.getElementById('status').className='status error';}}).catch(e=>{document.getElementById('status').textContent='网络错误: '+e.message;document.getElementById('debug').textContent='fetch错误: '+e.message;});}checkPayment();let interval=setInterval(checkPayment,3000);setTimeout(()=>{clearInterval(interval);document.getElementById('status').textContent='查询超时，请刷新页面重试';document.getElementById('status').className='status error';},60000);</script></body></html>`)
+          const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+            body{font-family:system-ui,sans-serif;padding:24px;text-align:center;background:#f8fafc}
+            .s{padding:12px;margin-top:16px;border-radius:8px;font-size:14px}
+            .w{background:#fef3c7;color:#92400e}
+            .g{background:#d1fae5;color:#065f46}
+            .r{background:#fee2e2;color:#991b1b}
+            .d{font-size:10px;color:#94a3b8;margin-top:8px;word-break:break-all}
+          </style></head><body>
+            <h3>微信扫码支付</h3>
+            <p>金额：¥${price}</p>
+            <img src="${qrUrl}" style="border-radius:12px;border:1px solid #e2e8f0"/>
+            <div id="st" class="s w">请使用微信扫码支付</div>
+            <div id="db" class="d">订单号: ${outTradeNo}</div>
+            <script>
+              let c=0;
+              function ck(){
+                c++;
+                document.getElementById('db').textContent='查询'+c+'次';
+                fetch('/api/payment/wechat/check-status',{
+                  method:'POST',
+                  headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify({outTradeNo:'${outTradeNo}'})
+                }).then(r=>r.json()).then(d=>{
+                  document.getElementById('db').textContent=JSON.stringify(d);
+                  if(d.ok&&d.status==='paid'){
+                    document.getElementById('st').textContent='支付成功！';
+                    document.getElementById('st').className='s g';
+                    setTimeout(()=>{
+                      window.close();
+                      window.opener.location.href='/market/membership/success?payment=wechat';
+                    },1500);
+                  }else if(d.ok){
+                    document.getElementById('st').textContent='等待支付...';
+                    document.getElementById('st').className='s w';
+                  }else{
+                    document.getElementById('st').textContent='失败: '+d.message;
+                    document.getElementById('st').className='s r';
+                  }
+                }).catch(e=>{
+                  document.getElementById('st').textContent='错误';
+                  document.getElementById('db').textContent=e.message;
+                });
+              }
+              ck();
+              setInterval(ck,3000);
+            </script>
+          </body></html>`
+          qrWin.document.write(html)
         }
       } else if (json.type === "alipay" && json.url) {
         window.location.href = json.url
