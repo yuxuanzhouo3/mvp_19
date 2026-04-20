@@ -6,31 +6,43 @@ function getPrivateKey() {
   let raw = process.env.WECHAT_PAY_PRIVATE_KEY || ""
   console.log("[WechatPay] 原始私钥长度:", raw.length)
   
-  raw = raw.replace(/\\n/g, "\n").replace(/\r/g, "").trim()
+  // 移除所有空白字符和换行符
+  raw = raw.replace(/[\s\r\n]/g, "").trim()
   
-  if (raw.startsWith("-----BEGIN PRIVATE KEY-----") && raw.endsWith("-----END PRIVATE KEY-----")) {
-    const content = raw.slice(27, -25).trim()
-    const lines = []
-    for (let i = 0; i < content.length; i += 64) {
-      lines.push(content.slice(i, i + 64))
-    }
-    raw = "-----BEGIN PRIVATE KEY-----\n" + lines.join("\n") + "\n-----END PRIVATE KEY-----"
-  } else if (!raw.includes("-----BEGIN PRIVATE KEY-----")) {
-    const lines = []
-    for (let i = 0; i < raw.length; i += 64) {
-      lines.push(raw.slice(i, i + 64))
-    }
-    raw = "-----BEGIN PRIVATE KEY-----\n" + lines.join("\n") + "\n-----END PRIVATE KEY-----"
+  console.log("[WechatPay] 移除空白后长度:", raw.length)
+  
+  // 确保有正确的格式标记
+  if (!raw.startsWith("-----BEGINPRIVATEKEY-----")) {
+    raw = raw.replace(/^-----BEGINPRIVATEKEY-----/, "").replace(/-----ENDPRIVATEKEY-----$/, "").trim()
+  } else {
+    raw = raw.replace("-----BEGINPRIVATEKEY-----", "").replace("-----ENDPRIVATEKEY-----", "").trim()
   }
   
-  console.log("[WechatPay] 处理后私钥长度:", raw.length)
-  return raw
+  console.log("[WechatPay] 移除标记后长度:", raw.length)
+  
+  // 重新构建正确的PEM格式
+  const lines = []
+  for (let i = 0; i < raw.length; i += 64) {
+    lines.push(raw.slice(i, i + 64))
+  }
+  const formattedKey = "-----BEGIN PRIVATE KEY-----\n" + lines.join("\n") + "\n-----END PRIVATE KEY-----"
+  
+  console.log("[WechatPay] 处理后私钥长度:", formattedKey.length)
+  return formattedKey
 }
 
 function sign(message: string) {
-  const s = createSign("RSA-SHA256")
-  s.update(message)
-  return s.sign(getPrivateKey(), "base64")
+  try {
+    const privateKey = getPrivateKey()
+    const s = createSign("RSA-SHA256")
+    s.update(message)
+    const signature = s.sign(privateKey, "base64")
+    console.log("[WechatPay] 签名成功, 长度:", signature.length)
+    return signature
+  } catch (error) {
+    console.error("[WechatPay] 签名错误:", error)
+    throw error
+  }
 }
 
 function buildAuthorization(method: string, url: string, body: string) {
@@ -54,33 +66,39 @@ export async function POST(req: NextRequest) {
 
     const mchId = process.env.WECHAT_PAY_MCH_ID!
     const apiUrl = `https://api.mch.weixin.qq.com/v3/pay/transactions/out-trade-no/${outTradeNo}?mchid=${mchId}`
-    const authorization = buildAuthorization("GET", apiUrl, "")
-
     console.log("[WechatPay Query] 查询订单:", outTradeNo)
-
-    const res = await fetch(apiUrl, {
-      method: "GET",
-      headers: {
-        "Authorization": authorization,
-        "Accept": "application/json",
-      },
-    })
-
-    const data = await res.json()
-    console.log("[WechatPay Query] 响应:", res.status, data)
-
-    if (!res.ok) {
-      return NextResponse.json({ ok: false, message: data.message || "查询失败", status: res.status, detail: data }, { status: 200 })
-    }
-
-    let status = data.trade_state
-    if (status === 'SUCCESS') {
-      status = 'paid'
-    } else if (['NOTPAY', 'USERPAYING', 'REFUND', 'PAYERROR'].includes(status)) {
-      status = 'unpaid'
-    }
     
-    return NextResponse.json({ ok: true, status, originalStatus: data.trade_state })
+    try {
+      const authorization = buildAuthorization("GET", apiUrl, "")
+      console.log("[WechatPay Query] 授权头长度:", authorization.length)
+      
+      const res = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "Authorization": authorization,
+          "Accept": "application/json",
+        },
+      })
+
+      const data = await res.json()
+      console.log("[WechatPay Query] 响应:", res.status, data)
+
+      if (!res.ok) {
+        return NextResponse.json({ ok: false, message: data.message || "查询失败", status: res.status, detail: data }, { status: 200 })
+      }
+
+      let status = data.trade_state
+      if (status === 'SUCCESS') {
+        status = 'paid'
+      } else if (['NOTPAY', 'USERPAYING', 'REFUND', 'PAYERROR'].includes(status)) {
+        status = 'unpaid'
+      }
+      
+      return NextResponse.json({ ok: true, status, originalStatus: data.trade_state })
+    } catch (authError) {
+      console.error("[WechatPay Query] 授权错误:", authError)
+      return NextResponse.json({ ok: false, message: "查询授权失败: " + (authError instanceof Error ? authError.message : "未知错误") }, { status: 500 })
+    }
   } catch (e: any) {
     console.error("[WechatPay Query] 错误:", e)
     return NextResponse.json({ ok: false, message: e.message }, { status: 500 })
