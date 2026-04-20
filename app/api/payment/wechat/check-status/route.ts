@@ -4,15 +4,26 @@ import { randomUUID } from "crypto"
 
 function getPrivateKey() {
   let raw = process.env.WECHAT_PAY_PRIVATE_KEY || ""
-  raw = raw.replace(/\\n/g, "\n").replace(/\r/g, "")
-  if (!raw.includes("-----BEGIN PRIVATE KEY-----")) {
-    raw = raw.trim()
+  console.log("[WechatPay] 原始私钥长度:", raw.length)
+  
+  raw = raw.replace(/\\n/g, "\n").replace(/\r/g, "").trim()
+  
+  if (raw.startsWith("-----BEGIN PRIVATE KEY-----") && raw.endsWith("-----END PRIVATE KEY-----")) {
+    const content = raw.slice(27, -25).trim()
+    const lines = []
+    for (let i = 0; i < content.length; i += 64) {
+      lines.push(content.slice(i, i + 64))
+    }
+    raw = "-----BEGIN PRIVATE KEY-----\n" + lines.join("\n") + "\n-----END PRIVATE KEY-----"
+  } else if (!raw.includes("-----BEGIN PRIVATE KEY-----")) {
     const lines = []
     for (let i = 0; i < raw.length; i += 64) {
       lines.push(raw.slice(i, i + 64))
     }
     raw = "-----BEGIN PRIVATE KEY-----\n" + lines.join("\n") + "\n-----END PRIVATE KEY-----"
   }
+  
+  console.log("[WechatPay] 处理后私钥长度:", raw.length)
   return raw
 }
 
