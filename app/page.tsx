@@ -22,6 +22,7 @@ import {
   User,
   LogOut,
   Settings,
+  Play,
 } from "lucide-react"
 
 export default function HomePage() {
@@ -31,6 +32,7 @@ export default function HomePage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [aiQuota, setAiQuota] = useState<{ remainingCalls: number; balance: number } | null>(null)
+  const [showVideo, setShowVideo] = useState(false)
 
   // 检查用户登录状态
   const checkUserLogin = async () => {
@@ -272,6 +274,9 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={toggleTheme}>
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setShowVideo(true)}>
+                <Play className="w-5 h-5" />
               </Button>
               <span className="hidden sm:inline-flex items-center rounded-md border border-border/40 px-2 py-1 text-[11px] text-muted-foreground">
                 CN
@@ -611,6 +616,31 @@ export default function HomePage() {
             <p className="text-muted-foreground">{t.footer.subtitle}</p>
           </div>
         </footer>
+
+        {/* Video Modal */}
+        {showVideo && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+            <div className="relative max-w-4xl w-full mx-4">
+              <button 
+                onClick={() => setShowVideo(false)}
+                className="absolute top-4 right-4 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white z-10"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                {/* 这里可以替换为你的视频链接 */}
+                <video 
+                  src="/vido/6c07be436fbc5b9f38fd0c38a02e5eff_raw.mp4" 
+                  autoPlay 
+                  controls 
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
