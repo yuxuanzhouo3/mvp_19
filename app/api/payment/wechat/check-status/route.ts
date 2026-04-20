@@ -51,8 +51,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, message: data.message || "查询微信支付订单失败" }, { status: 500 })
     }
 
-    // 返回支付状态
-    return NextResponse.json({ ok: true, status: data.trade_state })
+    // 转换微信支付状态为前端期望的格式
+    let status = data.trade_state
+    if (status === 'SUCCESS') {
+      status = 'paid'
+    } else if (['NOTPAY', 'USERPAYING'].includes(status)) {
+      status = 'unpaid'
+    }
+    return NextResponse.json({ ok: true, status })
   } catch (e: any) {
     console.error("[wechat check status]", e)
     return NextResponse.json({ ok: false, message: e.message }, { status: 500 })
