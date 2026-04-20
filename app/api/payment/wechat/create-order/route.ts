@@ -44,13 +44,19 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     const outTradeNo = `WX${Date.now()}${randomUUID().slice(0, 6).toUpperCase()}`
 
+    // 处理金额，确保至少为1分
+    let totalAmount = Math.round(amount * 100)
+    if (totalAmount < 1) {
+      totalAmount = 1 // 最低1分
+    }
+
     const body = JSON.stringify({
       appid: appId,
       mchid: mchId,
       description: planName || "mornbusiness 会员",
       out_trade_no: outTradeNo,
       notify_url: `${baseUrl}/api/payment/wechat/notify`,
-      amount: { total: Math.round(amount * 100), currency: "CNY" },
+      amount: { total: totalAmount, currency: "CNY" },
       attach: JSON.stringify({ userId, planId }),
     })
 
