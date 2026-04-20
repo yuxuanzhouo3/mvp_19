@@ -23,7 +23,8 @@
       "Bash(docker --version)",
       "Bash(docker build *)",
       "Bash(find . -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" -o -name \"*.js\" -o -name \"*.jsx\" \\\\\\) -exec grep -l \"btoa\" {} \\\\;)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(node test_alipay_key.js)"
     ],
     "additionalDirectories": [
       "d:\\mvp\\mvp_19\\app\\api\\market\\admin"

@@ -115,6 +115,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, type: "wechat", codeUrl: data.codeUrl, outTradeNo: data.outTradeNo })
     }
 
+    // ── 支付宝（国内）──────────────────────────────────
+    if (paymentMethod === "alipay") {
+      const res = await fetch(`${baseUrl}/api/payment/alipay/create-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", cookie: `market_user_id=${userId}` },
+        body: JSON.stringify({ amount: finalPrice, planId, planName: plan.name }),
+      })
+      const data = await res.json()
+      if (!data.ok) throw new Error(data.message || "创建支付宝订单失败")
+      return NextResponse.json({ ok: true, type: "alipay", url: data.url, outTradeNo: data.outTradeNo })
+    }
+
     // ── Stripe ──────────────────────────────────────────
     if (paymentMethod === "stripe") {
       const Stripe = (await import("stripe")).default

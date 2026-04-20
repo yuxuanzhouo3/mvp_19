@@ -27,7 +27,7 @@ function MembershipContent() {
   const [discountChecking, setDiscountChecking] = useState(false)
   const [discountMsg, setDiscountMsg] = useState("")
   const [purchasing, setPurchasing] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal" | "wechat_pay">(isCN ? "wechat_pay" : "stripe")
+  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "paypal" | "wechat_pay" | "alipay">(isCN ? "wechat_pay" : "stripe")
   const [error, setError] = useState("")
   const region = isCN ? "cn" : "intl"
   const currency = isCN ? "¥" : "$"
@@ -80,6 +80,8 @@ function MembershipContent() {
           const price = getFinalPrice(selected)
           qrWin.document.write(`<html><body style="text-align:center;font-family:sans-serif;padding:24px;background:#f8fafc"><h3 style="color:#1e293b;margin-bottom:8px">微信扫码支付</h3><p style="color:#64748b;margin-bottom:16px">金额：¥${price}</p><img src="${qrUrl}" style="border-radius:12px;border:1px solid #e2e8f0" /><p style="color:#94a3b8;font-size:12px;margin-top:16px">支付完成后请关闭此窗口并刷新页面</p></body></html>`)
         }
+      } else if (json.type === "alipay" && json.url) {
+        window.location.href = json.url
       }
     } catch { setError("购买失败，请重试") }
     finally { setPurchasing(false) }
@@ -177,11 +179,18 @@ function MembershipContent() {
               </div>
               <div className="flex gap-2 flex-wrap">
                 {isCN ? (
-                  <button onClick={() => setPaymentMethod("wechat_pay")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all ${paymentMethod === "wechat_pay" ? "border-green-500 bg-green-50 text-green-700" : "border-slate-200 bg-white/70 text-slate-500"}`}>
-                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#07C160]"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348z"/></svg>
-                    微信支付
-                  </button>
+                  <>
+                    <button onClick={() => setPaymentMethod("wechat_pay")}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all ${paymentMethod === "wechat_pay" ? "border-green-500 bg-green-50 text-green-700" : "border-slate-200 bg-white/70 text-slate-500"}`}>
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#07C160]"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348z"/></svg>
+                      微信支付
+                    </button>
+                    <button onClick={() => setPaymentMethod("alipay")}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all ${paymentMethod === "alipay" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-slate-200 bg-white/70 text-slate-500"}`}>
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#1677FF]"><path d="M21.84 2.324H2.16A2.16 2.16 0 0 0 0 4.484v15.032A2.16 2.16 0 0 0 2.16 21.68h19.68a2.16 2.16 0 0 0 2.16-2.16V4.484a2.16 2.16 0 0 0-2.16-2.16zm-8.64 14.4a4.32 4.32 0 1 1 0-8.64 4.32 4.32 0 0 1 0 8.64zm0-2.16a2.16 2.16 0 1 0 0-4.32 2.16 2.16 0 0 0 0 4.32z"/></svg>
+                      支付宝
+                    </button>
+                  </>
                 ) : (
                   <>
                     <button onClick={() => setPaymentMethod("stripe")}
