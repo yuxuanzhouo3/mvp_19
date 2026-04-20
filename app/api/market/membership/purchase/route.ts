@@ -45,44 +45,13 @@ function getPrivateKey() {
   let raw = process.env.WECHAT_PAY_PRIVATE_KEY || ""
   console.log("[WechatPay] 原始私钥长度:", raw.length)
   
-  // 移除所有的反斜杠、多余的空格和换行符
+  // 只处理转义字符，保留原始格式
   raw = raw.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\r/g, "")
   
   console.log("[WechatPay] 处理转义字符后长度:", raw.length)
+  console.log("[WechatPay] 使用标准格式的私钥")
   
-  // 确保有正确的格式标记
-  let hasBeginMarker = raw.includes("-----BEGIN PRIVATE KEY-----")
-  let hasEndMarker = raw.includes("-----END PRIVATE KEY-----")
-  
-  let keyContent = raw
-  
-  // 如果有格式标记，提取内容
-  if (hasBeginMarker && hasEndMarker) {
-    const beginIndex = raw.indexOf("-----BEGIN PRIVATE KEY-----") + "-----BEGIN PRIVATE KEY-----".length
-    const endIndex = raw.indexOf("-----END PRIVATE KEY-----")
-    keyContent = raw.substring(beginIndex, endIndex).trim()
-  } else if (hasBeginMarker) {
-    const beginIndex = raw.indexOf("-----BEGIN PRIVATE KEY-----") + "-----BEGIN PRIVATE KEY-----".length
-    keyContent = raw.substring(beginIndex).trim()
-  } else if (hasEndMarker) {
-    const endIndex = raw.indexOf("-----END PRIVATE KEY-----")
-    keyContent = raw.substring(0, endIndex).trim()
-  }
-  
-  // 移除所有空白字符
-  keyContent = keyContent.replace(/\s/g, "")
-  
-  console.log("[WechatPay] 纯私钥内容长度:", keyContent.length)
-  
-  // 重新构建正确的PEM格式
-  const lines = []
-  for (let i = 0; i < keyContent.length; i += 64) {
-    lines.push(keyContent.slice(i, i + 64))
-  }
-  const formattedKey = "-----BEGIN PRIVATE KEY-----\n" + lines.join("\n") + "\n-----END PRIVATE KEY-----"
-  
-  console.log("[WechatPay] 处理后私钥长度:", formattedKey.length)
-  return formattedKey
+  return raw
 }
 
 function sign(message: string) {
