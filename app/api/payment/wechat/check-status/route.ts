@@ -3,14 +3,23 @@ import { createSign } from "crypto"
 import { randomUUID } from "crypto"
 
 function getPrivateKey() {
-  const raw = process.env.WECHAT_PAY_PRIVATE_KEY || ""
-  return raw.replace(/\n/g, "\n")
+  let raw = process.env.WECHAT_PAY_PRIVATE_KEY || ""
+  raw = raw.replace(/\\n/g, "\n").replace(/\r/g, "")
+  if (!raw.includes("-----BEGIN PRIVATE KEY-----")) {
+    raw = raw.trim()
+    const lines = []
+    for (let i = 0; i < raw.length; i += 64) {
+      lines.push(raw.slice(i, i + 64))
+    }
+    raw = "-----BEGIN PRIVATE KEY-----\n" + lines.join("\n") + "\n-----END PRIVATE KEY-----"
+  }
+  return raw
 }
 
 function sign(message: string) {
-  const sign = createSign("RSA-SHA256")
-  sign.update(message)
-  return sign.sign(getPrivateKey(), "base64")
+  const s = createSign("RSA-SHA256")
+  s.update(message)
+  return s.sign(getPrivateKey(), "base64")
 }
 
 function buildAuthorization(method: string, url: string, body: string) {
@@ -25,7 +34,6 @@ function buildAuthorization(method: string, url: string, body: string) {
   return `WECHATPAY2-SHA256-RSA2048 mchid="${mchId}",nonce_str="${nonce}",timestamp="${timestamp}",serial_no="${serialNo}",signature="${signature}"`
 }
 
-// 检查微信支付状态
 export async function POST(req: NextRequest) {
   try {
     const { outTradeNo } = await req.json()

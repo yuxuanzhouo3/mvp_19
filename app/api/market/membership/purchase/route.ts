@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { randomUUID } from "crypto"
+import { randomUUID, createSign } from "crypto"
 
 function getUserId(req: NextRequest) {
   const cookie = req.headers.get("cookie") || ""
@@ -41,8 +41,38 @@ async function grantQuota(userId: string, aiQuota: number) {
   return newBalance
 }
 
-// POST /api/market/membership/purchase
-// body: { planId, discountCode?, paymentMethod: "stripe" | "paypal" }
+function getPrivateKey() {
+  let raw = process.env.WECHAT_PAY_PRIVATE_KEY || ""
+  raw = raw.replace(/\\n/g, "\n").replace(/\r/g, "")
+  if (!raw.includes("-----BEGIN PRIVATE KEY-----")) {
+    raw = raw.trim()
+    const lines = []
+    for (let i = 0; i < raw.length; i += 64) {
+      lines.push(raw.slice(i, i + 64))
+    }
+    raw = "-----BEGIN PRIVATE KEY-----\n" + lines.join("\n") + "\n-----END PRIVATE KEY-----"
+  }
+  return raw
+}
+
+function sign(message: string) {
+  const s = createSign("RSA-SHA256")
+  s.update(message)
+  return s.sign(getPrivateKey(), "base64")
+}
+
+function buildAuthorization(method: string, url: string, body: string) {
+  const mchId = process.env.WECHAT_PAY_MCH_ID!
+  const serialNo = process.env.WECHAT_PAY_SERIAL_NO!
+  const timestamp = Math.floor(Date.now() / 1000).toString()
+  const nonce = randomUUID().replace(/-/g, "").slice(0, 32)
+  const urlObj = new URL(url)
+  const canonicalUrl = urlObj.pathname + (urlObj.search || "")
+  const message = `${method}\n${canonicalUrl}\n${timestamp}\n${nonce}\n${body}\n`
+  const signature = sign(message)
+  return `WECHATPAY2-SHA256-RSA2048 mchid="${mchId}",nonce_str="${nonce}",timestamp="${timestamp}",serial_no="${serialNo}",signature="${signature}"`
+}
+
 export async function POST(req: NextRequest) {
   const userId = getUserId(req)
   if (!userId) return NextResponse.json({ ok: false, message: "未登录" }, { status: 401 })
@@ -53,7 +83,6 @@ export async function POST(req: NextRequest) {
   try {
     const { isCN } = await import("@/lib/db-adapter")
 
-    // 查套餐（国内/国外分别查）
     let plan: any = null
     if (isCN()) {
       const cb = await import("@cloudbase/node-sdk")
@@ -71,7 +100,6 @@ export async function POST(req: NextRequest) {
     let finalPrice = parseFloat(plan.final_price)
     let usedCode: string | null = null
 
-    // 验证折扣码（国内/国外分别查）
     if (discountCode?.trim()) {
       const upperCode = discountCode.trim().toUpperCase()
       let dc: any = null
@@ -103,19 +131,42 @@ export async function POST(req: NextRequest) {
     expiresAt.setMonth(expiresAt.getMonth() + plan.months)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
-    // ── 微信支付（国内）──────────────────────────────────
     if (paymentMethod === "wechat_pay") {
-      const res = await fetch(`${baseUrl}/api/payment/wechat/create-order`, {
+      const appId = process.env.WECHAT_PAY_APP_ID!
+      const mchId = process.env.WECHAT_PAY_MCH_ID!
+      const outTradeNo = `WX${Date.now()}${randomUUID().slice(0, 6).toUpperCase()}`
+      let totalAmount = Math.round(finalPrice * 100)
+      if (totalAmount < 1) totalAmount = 1
+      const body = JSON.stringify({
+        appid: appId,
+        mchid: mchId,
+        description: plan.name || "mornbusiness 会员",
+        out_trade_no: outTradeNo,
+        notify_url: `${baseUrl}/api/payment/wechat/notify`,
+        amount: { total: totalAmount, currency: "CNY" },
+        attach: JSON.stringify({ userId, planId }),
+      })
+      const apiUrl = "https://api.mch.weixin.qq.com/v3/pay/transactions/native"
+      const authorization = buildAuthorization("POST", apiUrl, body)
+      console.log("[WechatPay] 创建订单, outTradeNo:", outTradeNo)
+      const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json", cookie: `market_user_id=${userId}` },
-        body: JSON.stringify({ amount: finalPrice, planId, planName: plan.name }),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authorization,
+          "Accept": "application/json",
+        },
+        body,
       })
       const data = await res.json()
-      if (!data.ok) throw new Error(data.message || "创建微信支付订单失败")
-      return NextResponse.json({ ok: true, type: "wechat", codeUrl: data.codeUrl, outTradeNo: data.outTradeNo })
+      console.log("[WechatPay] 响应:", res.status, data)
+      if (!res.ok || !data.code_url) {
+        console.error("[WechatPay] 创建订单失败:", data)
+        throw new Error(data.message || "创建微信支付订单失败")
+      }
+      return NextResponse.json({ ok: true, type: "wechat", codeUrl: data.code_url, outTradeNo })
     }
 
-    // ── 支付宝（国内）──────────────────────────────────
     if (paymentMethod === "alipay") {
       const res = await fetch(`${baseUrl}/api/payment/alipay/create-order`, {
         method: "POST",
@@ -127,7 +178,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, type: "alipay", url: data.url, outTradeNo: data.outTradeNo })
     }
 
-    // ── Stripe ──────────────────────────────────────────
     if (paymentMethod === "stripe") {
       const Stripe = (await import("stripe")).default
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2026-03-25.dahlia" as any })
@@ -135,11 +185,11 @@ export async function POST(req: NextRequest) {
         payment_method_types: ["card"],
         line_items: [{
           price_data: {
-            currency: "usd",
-            product_data: { name: `mornbusiness ${plan.name}` },
-            unit_amount: Math.round(finalPrice * 100),
-          },
-          quantity: 1,
+          currency: "usd",
+          product_data: { name: `mornbusiness ${plan.name}` },
+          unit_amount: Math.round(finalPrice * 100),
+        },
+        quantity: 1,
         }],
         mode: "payment",
         success_url: `${baseUrl}/market/membership/success?session_id={CHECKOUT_SESSION_ID}&membership_id=${membershipId}`,
@@ -156,7 +206,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, type: "stripe", url: session.url })
     }
 
-    // ── PayPal ──────────────────────────────────────────
     if (paymentMethod === "paypal") {
       const PAYPAL_BASE = process.env.PAYPAL_ENVIRONMENT === "production"
         ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com"
@@ -165,12 +214,11 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64")}`,
+          Authorization: `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64")`,
         },
         body: "grant_type=client_credentials",
       })
       const { access_token } = await tokenRes.json()
-
       const orderRes = await fetch(`${PAYPAL_BASE}/v2/checkout/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${access_token}` },
@@ -185,7 +233,6 @@ export async function POST(req: NextRequest) {
       })
       const order = await orderRes.json()
       if (!orderRes.ok) throw new Error(order.message || "创建 PayPal 订单失败")
-
       return NextResponse.json({ ok: true, type: "paypal", orderId: order.id })
     }
 
@@ -196,12 +243,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// POST /api/market/membership/purchase/capture  (PayPal 捕获)
-// 单独用 capture 子路由处理，这里提供一个 PUT 方法复用
 export async function PUT(req: NextRequest) {
   const userId = getUserId(req)
   if (!userId) return NextResponse.json({ ok: false, message: "未登录" }, { status: 401 })
-
   const { orderId } = await req.json()
   if (!orderId) return NextResponse.json({ ok: false, message: "orderId 缺失" }, { status: 400 })
 
@@ -213,7 +257,7 @@ export async function PUT(req: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64")}`,
+        Authorization: `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64")`,
       },
       body: "grant_type=client_credentials",
     })
@@ -226,7 +270,6 @@ export async function PUT(req: NextRequest) {
     const capture = await captureRes.json()
     if (!captureRes.ok || capture.status !== "COMPLETED") throw new Error("PayPal 支付未完成")
 
-    // 解析 custom_id
     const customId = capture.purchase_units?.[0]?.payments?.captures?.[0]?.custom_id || ""
     let meta: any = {}
     try { meta = JSON.parse(customId) } catch {}
@@ -237,7 +280,6 @@ export async function PUT(req: NextRequest) {
     const sb = await getSupabase()
     const { data: plan } = await sb.from("membership_plans").select("*").eq("id", planId).single()
 
-    // 记录会员
     await sb.from("user_memberships").insert({
       id: membershipId || `mem-${randomUUID().slice(0, 8)}`,
       user_id: userId, plan_id: planId, plan_name: plan?.name,
@@ -252,7 +294,6 @@ export async function PUT(req: NextRequest) {
       created_at: new Date().toISOString(),
     })
 
-    // 增加额度
     const newBalance = await grantQuota(userId, parseFloat(aiQuota || plan?.ai_quota || "0"))
     const remainingCalls = Math.floor(newBalance / 0.0005)
 
