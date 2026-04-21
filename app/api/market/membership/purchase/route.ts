@@ -45,12 +45,18 @@ function getPrivateKey() {
   let raw = process.env.WECHAT_PAY_PRIVATE_KEY || ""
   console.log("[WechatPay] 原始私钥长度:", raw.length)
   
-  // 只处理转义字符，保留原始格式
+  // 处理转义字符，确保格式正确
   raw = raw.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\r/g, "")
   
   console.log("[WechatPay] 处理转义字符后长度:", raw.length)
-  console.log("[WechatPay] 使用标准格式的私钥")
   
+  // 检查是否有正确的格式标记
+  if (!raw.startsWith("-----BEGIN PRIVATE KEY-----") || !raw.endsWith("-----END PRIVATE KEY-----")) {
+    console.error("[WechatPay] 私钥格式错误，缺少格式标记")
+    throw new Error("私钥格式错误，缺少 BEGIN/END 标记")
+  }
+  
+  console.log("[WechatPay] 私钥格式正确")
   return raw
 }
 
