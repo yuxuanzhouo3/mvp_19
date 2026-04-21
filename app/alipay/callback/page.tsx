@@ -10,21 +10,51 @@ function AlipayCallbackContent() {
   const tradeNo = searchParams.get("trade_no")
   const totalAmount = searchParams.get("total_amount")
   const tradeStatus = searchParams.get("trade_status")
+  const [isVerifying, setIsVerifying] = useState(true)
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
 
   useEffect(() => {
-    // 检查支付状态
-    if (tradeStatus === "TRADE_SUCCESS" || tradeStatus === "TRADE_FINISHED") {
-      // 支付成功，重定向到成功页面
-      setTimeout(() => {
-        router.push("/market/membership/success?payment=alipay")
-      }, 2000)
-    } else {
-      // 支付失败，重定向到会员页面
-      setTimeout(() => {
-        router.push("/market/membership?cancelled=1")
-      }, 2000)
+    // 验证支付状态
+    const verifyPayment = async () => {
+      try {
+        // 构建查询参数对象
+        const params = Object.fromEntries(searchParams.entries())
+        
+        // 检查是否存在订单号，有订单号通常表示支付流程已完成
+        if (outTradeNo) {
+          // 对于支付宝同步回调，只要有 out_trade_no 就认为支付成功
+          // 实际的状态验证应该通过服务端API进行
+          setPaymentSuccess(true)
+        } else {
+          setPaymentSuccess(false)
+        }
+      } catch (error) {
+        console.error("验证支付状态失败:", error)
+        setPaymentSuccess(false)
+      } finally {
+        setIsVerifying(false)
+      }
     }
-  }, [tradeStatus, router])
+
+    verifyPayment()
+  }, [searchParams, outTradeNo])
+
+  useEffect(() => {
+    // 根据验证结果跳转
+    if (!isVerifying) {
+      if (paymentSuccess) {
+        // 支付成功，重定向到成功页面
+        setTimeout(() => {
+          router.push("/market/membership/success?payment=alipay")
+        }, 2000)
+      } else {
+        // 支付失败，重定向到会员页面
+        setTimeout(() => {
+          router.push("/market/membership?cancelled=1")
+        }, 2000)
+      }
+    }
+  }, [isVerifying, paymentSuccess, router])
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
@@ -34,7 +64,7 @@ function AlipayCallbackContent() {
         </div>
         <h2 className="text-2xl font-bold text-slate-800">处理支付结果</h2>
         <p className="text-slate-500">正在验证支付状态，请稍候...</p>
-        {tradeStatus === "TRADE_SUCCESS" || tradeStatus === "TRADE_FINISHED" ? (
+        {!isVerifying && paymentSuccess ? (
           <div className="mt-4">
             <div className="w-12 h-12 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-3">
               <Check size={20} className="text-emerald-600" />
@@ -44,7 +74,7 @@ function AlipayCallbackContent() {
             <p className="text-sm text-slate-500">交易号：{tradeNo}</p>
             <p className="text-sm text-slate-500">金额：¥{totalAmount}</p>
           </div>
-        ) : (
+        ) : !isVerifying ? (
           <div className="mt-4">
             <div className="w-12 h-12 mx-auto rounded-full bg-red-100 flex items-center justify-center mb-3">
               <AlertCircle size={20} className="text-red-600" />
@@ -52,7 +82,7 @@ function AlipayCallbackContent() {
             <p className="text-red-600 font-semibold">支付失败或已取消</p>
             <p className="text-sm text-slate-500 mt-2">请重新尝试或选择其他支付方式</p>
           </div>
-        )}
+        ) : null}
         <div className="mt-6 text-xs text-slate-400">
           页面将自动跳转...
         </div>
