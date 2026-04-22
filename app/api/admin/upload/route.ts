@@ -54,9 +54,10 @@ export async function POST(request: NextRequest) {
     // 检查文件类型
     const isImage = file.type.startsWith("image/")
     const isVideo = file.type.startsWith("video/")
+    const isInstaller = [".apk", ".ipa", ".zip", ".rar", ".tar.gz"].some(ext => file.name.toLowerCase().endsWith(ext))
 
-    if (!isImage && !isVideo) {
-      return NextResponse.json({ ok: false, error: "只支持上传图片或视频文件" }, { status: 400 })
+    if (!isImage && !isVideo && !isInstaller) {
+      return NextResponse.json({ ok: false, error: "只支持上传图片、视频或安装包文件" }, { status: 400 })
     }
 
     // 文件大小限制（50MB）
@@ -68,8 +69,16 @@ export async function POST(request: NextRequest) {
     // 生成文件名和路径
     const ext = file.name.split(".").pop() || (isImage ? "jpg" : "mp4")
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const subDir = isImage ? "images" : "videos"
-    const cloudPath = `${ADS_DIR}/${subDir}/${fileName}`
+    let cloudPath: string
+    
+    if (isInstaller) {
+      // 安装包文件上传到 Installpackage/apk 目录
+      cloudPath = `Installpackage/apk/${fileName}`
+    } else {
+      // 图片和视频上传到原来的目录
+      const subDir = isImage ? "images" : "videos"
+      cloudPath = `${ADS_DIR}/${subDir}/${fileName}`
+    }
 
     console.log('[admin/upload] uploading file:', {
       originalName: file.name,

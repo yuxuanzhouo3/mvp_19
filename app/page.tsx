@@ -33,6 +33,30 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [aiQuota, setAiQuota] = useState<{ remainingCalls: number; balance: number } | null>(null)
   const [showVideo, setShowVideo] = useState(false)
+  const [activeVideo, setActiveVideo] = useState<string | null>(null)
+
+  // 获取当前激活的视频
+  const getActiveVideo = async () => {
+    try {
+      // 从 localStorage 中获取激活的视频
+      if (typeof window !== 'undefined') {
+        const storedVideo = localStorage.getItem('active_video');
+        if (storedVideo) {
+          try {
+            const video = JSON.parse(storedVideo);
+            setActiveVideo(video.fileUrl);
+          } catch (e) {
+            console.error('Error parsing stored video:', e);
+          }
+        } else {
+          // 没有存储的视频，使用默认视频
+          setActiveVideo('/vido/6c07be436fbc5b9f38fd0c38a02e5eff_raw.mp4');
+        }
+      }
+    } catch (error) {
+      console.error('Error getting active video:', error);
+    }
+  }
 
   // 检查用户登录状态
   const checkUserLogin = async () => {
@@ -92,6 +116,7 @@ export default function HomePage() {
   // 初始检查
   useEffect(() => {
     checkUserLogin()
+    getActiveVideo()
   }, [])
 
   // 监听 storage 变化，处理登录/登出事件
@@ -630,13 +655,18 @@ export default function HomePage() {
                 </svg>
               </button>
               <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                {/* 这里可以替换为你的视频链接 */}
-                <video 
-                  src="/vido/6c07be436fbc5b9f38fd0c38a02e5eff_raw.mp4" 
-                  autoPlay 
-                  controls 
-                  className="w-full h-full"
-                />
+                {activeVideo ? (
+                  <video 
+                    src={activeVideo} 
+                    autoPlay 
+                    controls 
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-white">
+                    <p>暂无可用视频</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
