@@ -441,6 +441,7 @@ export default function ReleasesPage() {
                   <SelectContent>
                     <SelectItem value="android">Android</SelectItem>
                     <SelectItem value="ios">iOS</SelectItem>
+                    <SelectItem value="harmony">HarmonyOS</SelectItem>
                     <SelectItem value="web">Web</SelectItem>
                   </SelectContent>
                 </Select>
@@ -482,7 +483,7 @@ export default function ReleasesPage() {
                 <Input
                   id="file"
                   type="file"
-                  accept={formData.platform === 'android' ? '.apk' : formData.platform === 'ios' ? '.ipa' : '.zip,.rar,.tar.gz'}
+                  accept={formData.platform === 'android' ? '.apk' : formData.platform === 'ios' ? '.ipa' : formData.platform === 'harmony' ? '.hap' : '.zip,.rar,.tar.gz'}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
@@ -601,6 +602,7 @@ export default function ReleasesPage() {
                   <SelectContent>
                     <SelectItem value="android">Android</SelectItem>
                     <SelectItem value="ios">iOS</SelectItem>
+                    <SelectItem value="harmony">HarmonyOS</SelectItem>
                     <SelectItem value="web">Web</SelectItem>
                   </SelectContent>
                 </Select>
@@ -642,7 +644,7 @@ export default function ReleasesPage() {
                 <Input
                   id="file"
                   type="file"
-                  accept={formData.platform === 'android' ? '.apk' : formData.platform === 'ios' ? '.ipa' : '.zip,.rar,.tar.gz'}
+                  accept={formData.platform === 'android' ? '.apk' : formData.platform === 'ios' ? '.ipa' : formData.platform === 'harmony' ? '.hap' : '.zip,.rar,.tar.gz'}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {

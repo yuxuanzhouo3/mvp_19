@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     // 检查文件类型
     const isImage = file.type.startsWith("image/")
     const isVideo = file.type.startsWith("video/")
-    const isInstaller = [".apk", ".ipa", ".zip", ".rar", ".tar.gz"].some(ext => file.name.toLowerCase().endsWith(ext))
+    const isInstaller = [".apk", ".ipa", ".hap", ".zip", ".rar", ".tar.gz"].some(ext => file.name.toLowerCase().endsWith(ext))
 
     if (!isImage && !isVideo && !isInstaller) {
       return NextResponse.json({ ok: false, error: "只支持上传图片、视频或安装包文件" }, { status: 400 })
