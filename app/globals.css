@@ -346,3 +346,162 @@ html {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* 移动端友好的触摸滚动容器 */
+.mobile-scroll-container {
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.mobile-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* 移动端卡片堆叠布局 */
+@media (max-width: 768px) {
+  .mobile-card-stack > * {
+    margin-bottom: 1rem;
+  }
+
+  .mobile-card-stack > *:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* 移动端表单优化 */
+@media (max-width: 768px) {
+  .mobile-form-input {
+    font-size: 16px !important;
+  }
+
+  .mobile-form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* 移动端网格布局 */
+@media (max-width: 640px) {
+  .mobile-grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .mobile-grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 移动端文字截断 */
+@media (max-width: 768px) {
+  .mobile-text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px;
+  }
+}
+
+/* 移动端图标按钮增大触摸区域 */
+@media (max-width: 768px) {
+  .mobile-icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* 移动端全屏模态框 */
+@media (max-width: 768px) {
+  .mobile-modal-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    border-radius: 0;
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* 移动端底部固定栏 */
+@media (max-width: 768px) {
+  .mobile-fixed-bottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 1rem;
+    z-index: 30;
+  }
+
+  .mobile-fixed-bottom ~ main {
+    padding-bottom: 5rem;
+  }
+}
+
+/* 移动端顶部固定栏 */
+@media (max-width: 768px) {
+  .mobile-fixed-top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 1rem;
+    z-index: 30;
+  }
+
+  .mobile-fixed-top ~ main {
+    padding-top: 4rem;
+  }
+}
+
+/* 移动端友好间距 */
+@media (max-width: 768px) {
+  .mobile-section-spacing {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .mobile-container-padding {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* 移动端Flexbox工具 */
+@media (max-width: 768px) {
+  .mobile-flex-col {
+    flex-direction: column;
+  }
+
+  .mobile-flex-wrap {
+    flex-wrap: wrap;
+  }
+
+  .mobile-items-center {
+    align-items: center;
+  }
+
+  .mobile-justify-between {
+    justify-content: space-between;
+  }
+
+  .mobile-gap-2 {
+    gap: 0.5rem;
+  }
+
+  .mobile-gap-4 {
+    gap: 1rem;
+  }
+}

@@ -1,5 +1,8 @@
 import type { AIRequest, AIResponse } from "../types"
 import { priceOf } from "../pricing"
+import { fetchWithTimeout, FetchTimeoutError } from "../../fetch-timeout"
+
+const AI_TIMEOUT_MS = 60000 // AI 调用超时 60 秒
 
 // Use DashScope "compatible-mode" OpenAI-style endpoint to simplify
 export async function callAliyun(req: AIRequest): Promise<AIResponse> {
@@ -14,19 +17,32 @@ export async function callAliyun(req: AIRequest): Promise<AIResponse> {
     { role: "user", content: req.input },
   ]
 
-  const resp = await fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      temperature: req.temperature ?? 0.2,
-      max_tokens: req.maxTokens ?? 400,
-      messages,
-    }),
-  })
+  let resp: Response
+  try {
+    resp = await fetchWithTimeout(
+      "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: req.temperature ?? 0.2,
+          max_tokens: req.maxTokens ?? 400,
+          messages,
+        }),
+      },
+      AI_TIMEOUT_MS
+    )
+  } catch (err) {
+    if (err instanceof FetchTimeoutError) {
+      throw new Error("阿里云通义千问请求超时，请稍后重试")
+    }
+    throw err
+  }
+
   if (!resp.ok) {
     throw new Error(await resp.text())
   }

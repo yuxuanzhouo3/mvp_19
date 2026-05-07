@@ -1,3 +1,12 @@
+// 打印内存占用：每 5 秒打印一次
+setInterval(() => {
+  const mem = process.memoryUsage();
+  console.log('===== 内存使用 =====');
+  console.log('已使用 :', (mem.heapUsed / 1024 / 1024).toFixed(2), 'MB');
+  console.log('总分配 :', (mem.heapTotal / 1024 / 1024).toFixed(2), 'MB');
+  console.log('==================\n');
+}, 5000);
+
 import path from "node:path"
 
 /** @type {import('next').NextConfig} */

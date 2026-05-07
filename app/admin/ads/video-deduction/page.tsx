@@ -279,21 +279,22 @@ export default function Video演绎Page() {
   return (
     <div className="space-y-6">
       {/* 页头 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">视频演绎</h1>
           <p className="text-sm text-muted-foreground mt-1">
             管理视频演绎内容，共 {videos.length} 个视频
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={loadVideos} disabled={loading}>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={loadVideos} disabled={loading} className="flex-1 sm:flex-none">
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            刷新
+            <span className="sm:hidden">刷新</span>
           </Button>
-          <Button onClick={openUploadDialog}>
+          <Button onClick={openUploadDialog} className="flex-1 sm:flex-none">
             <Upload className="h-4 w-4 mr-2" />
-            上传视频
+            <span className="sm:hidden">上传视频</span>
+            <span className="hidden sm:inline">上传视频</span>
           </Button>
         </div>
       </div>
@@ -439,7 +440,7 @@ export default function Video演绎Page() {
           resetForm();
         }
       }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl mx-4 sm:mx-auto modal-mobile-bottom">
           <DialogHeader>
             <DialogTitle>上传视频</DialogTitle>
             <DialogDescription>
@@ -519,7 +520,7 @@ export default function Video演绎Page() {
 
       {/* 预览视频对话框 */}
       <Dialog open={!!viewingVideo} onOpenChange={() => setViewingVideo(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl mx-4 sm:mx-auto modal-mobile-bottom">
           <DialogHeader>
             <DialogTitle>视频预览</DialogTitle>
           </DialogHeader>

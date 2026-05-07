@@ -1,5 +1,8 @@
 import type { AIRequest, AIResponse } from "../types"
 import { priceOf } from "../pricing"
+import { fetchWithTimeout, FetchTimeoutError } from "../../fetch-timeout"
+
+const AI_TIMEOUT_MS = 60000 // AI 调用超时 60 秒
 
 export async function callOpenAI(req: AIRequest): Promise<AIResponse> {
   const apiKey = process.env.OPENAI_API_KEY
@@ -12,19 +15,32 @@ export async function callOpenAI(req: AIRequest): Promise<AIResponse> {
     { role: "user", content: req.input },
   ]
 
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: req.model || "gpt-4o-mini",
-      temperature: req.temperature ?? 0.2,
-      max_tokens: req.maxTokens ?? 400,
-      messages,
-    }),
-  })
+  let resp: Response
+  try {
+    resp = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: req.model || "gpt-4o-mini",
+          temperature: req.temperature ?? 0.2,
+          max_tokens: req.maxTokens ?? 400,
+          messages,
+        }),
+      },
+      AI_TIMEOUT_MS
+    )
+  } catch (err) {
+    if (err instanceof FetchTimeoutError) {
+      throw new Error("OpenAI 请求超时，请稍后重试")
+    }
+    throw err
+  }
+
   if (!resp.ok) {
     throw new Error(await resp.text())
   }

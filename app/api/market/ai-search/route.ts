@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
 import { sendEmail } from "@/lib/market/send-email"
+import { fetchWithTimeout, FetchTimeoutError } from "@/lib/fetch-timeout"
+import { logger } from "@/lib/logger"
+
+const AI_TIMEOUT_MS = 60000 // AI 调用超时 60 秒
 
 function getUserId(req: NextRequest) {
   const cookie = req.headers.get("cookie") || ""
@@ -39,12 +43,12 @@ async function ensureCollection(db: any, collectionName: string) {
     if (isNotExist && !isEnvError) {
       try {
         await db.createCollection(collectionName)
-        console.log(`[ai-search] 创建集合 ${collectionName} 成功`)
+        logger.info(`[ai-search] 创建集合 ${collectionName} 成功`)
       } catch (createErr) {
-        console.error(`[ai-search] 创建集合 ${collectionName} 失败:`, createErr)
+        logger.error(`[ai-search] 创建集合 ${collectionName} 失败`, createErr)
       }
     } else {
-      console.error(`[ai-search] 访问集合 ${collectionName} 错误:`, err)
+      logger.error(`[ai-search] 访问集合 ${collectionName} 错误`, err)
     }
   }
 }
@@ -146,7 +150,9 @@ function cleanUTF8(str: string): string {
   }
 }
 
-async function aiSearchAndExtract(query: string, type: string): Promise<{ name: string; email: string; website: string; description: string; rawContent: string }[]> {
+const MAX_RAW_CONTENT_LENGTH = 1000
+
+async function aiSearchAndExtract(query: string, type: string): Promise<{ name: string; email: string; website: string; description: string }[]> {
   const typeLabel = type === "blogger" ? "博主/KOL" : type === "enterprise" ? "企业/公司" : "VC投资机构"
 
   const aliyunKey = process.env.ALIYUN_DASHSCOPE_API_KEY
@@ -219,41 +225,53 @@ async function aiSearchAndExtract(query: string, type: string): Promise<{ name: 
 
   if (isAliyun) body.enable_search = true
 
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  })
+  let res: Response
+  try {
+    res = await fetchWithTimeout(
+      `${baseUrl}/chat/completions`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      },
+      AI_TIMEOUT_MS
+    )
+  } catch (err) {
+    if (err instanceof FetchTimeoutError) {
+      throw new Error("AI 搜索请求超时，请稍后重试")
+    }
+    throw err
+  }
 
   if (!res.ok) {
     const errText = await res.text()
-    console.error(`[ai-search] API error ${res.status}:`, errText)
+    logger.error(`[ai-search] API error ${res.status}`, errText)
     throw new Error(`AI API 错误: ${res.status}`)
   }
 
-  const data = await res.json()
-
-  // 兼容阿里云多轮返回（取最后一条 assistant content）
-  let content = ""
-  const choices = data.choices || []
-  for (const choice of choices) {
-    const msg = choice.message
-    if (msg?.role === "assistant" && typeof msg.content === "string" && msg.content.trim()) {
-      content = msg.content.trim()
+  // 用函数作用域封装，确保大对象在返回后立即被释放
+  const result = (async () => {
+    const data = await res.json()
+    let content = ""
+    const choices = data.choices || []
+    for (const choice of choices) {
+      const msg = choice.message
+      if (msg?.role === "assistant" && typeof msg.content === "string" && msg.content.trim()) {
+        content = msg.content.trim()
+      }
     }
-  }
-  if (!content) content = choices[0]?.message?.content || ""
+    if (!content) content = choices[0]?.message?.content || ""
 
-  console.log("[ai-search] raw content:", content.slice(0, 500))
+    logger.debug("[ai-search] raw content (preview):", content.slice(0, 200))
 
-  try {
-    // 提取 JSON 数组，兼容 markdown 代码块包裹
+    // 提取 JSON 数组
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || content.match(/(\[[\s\S]*\])/)
     const jsonStr = jsonMatch?.[1] || jsonMatch?.[0] || "[]"
     const results = JSON.parse(jsonStr.trim())
+
     if (!Array.isArray(results) || results.length === 0) return []
     return results.map((r: any) => ({
       name: cleanUTF8(String(r.name || "")),
@@ -262,10 +280,13 @@ async function aiSearchAndExtract(query: string, type: string): Promise<{ name: 
       description: cleanUTF8(r.email
         ? `${String(r.description || "")}${r.emailSource === "推断" ? "【邮箱为推断】" : ""}`
         : (r.emailNote || "暂无公开邮箱，请手动填写")),
-      rawContent: cleanUTF8(content),
     }))
+  })()
+
+  try {
+    return await result
   } catch (e) {
-    console.error("[ai-search] JSON parse error:", e, "content:", content.slice(0, 200))
+    logger.error("[ai-search] JSON parse error", { error: e })
     return []
   }
 }
@@ -313,13 +334,13 @@ export async function POST(req: NextRequest) {
       query: query.trim(),
       name: r.name, email: r.email, website: r.website,
       description: r.description, type,
-      raw_content: r.rawContent,
+      raw_content: "",
       email_sent: false,
       expires_at: expiresAt(),
       created_at: nowIso(),
     }))
 
-    const data = await insertLeads(rows)
+    await insertLeads(rows)
 
     // 扣除额度
     const newBalance = parseFloat((balance - COST_PER_CALL).toFixed(4))
@@ -329,7 +350,7 @@ export async function POST(req: NextRequest) {
 
     const remainingCalls = Math.floor(newBalance / COST_PER_CALL)
     return NextResponse.json({
-      ok: true, data,
+      ok: true, data: rows,
       quota: {
         balance: newBalance, totalUsed: newTotalUsed,
         callCount: newCallCount, costPerCall: COST_PER_CALL,
@@ -338,7 +359,7 @@ export async function POST(req: NextRequest) {
       }
     })
   } catch (e: any) {
-    console.error("[ai-search POST error]", e)
+    logger.error("[ai-search POST error]", e)
     return NextResponse.json({ ok: false, message: e.message || "搜索失败，请重试" }, { status: 500 })
   }
 }
@@ -370,7 +391,7 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (e: any) {
-    console.error("[ai-search GET error]", e)
+    logger.error("[ai-search GET error]", e)
     return NextResponse.json({ ok: false, message: e.message || "加载失败，请重试" }, { status: 500 })
   }
 }
@@ -386,7 +407,7 @@ export async function DELETE(req: NextRequest) {
     await db.collection("ai_search_leads").where({ id, user_id: userId }).remove()
     return NextResponse.json({ ok: true })
   } catch (e: any) {
-    console.error("[ai-search DELETE error]", e)
+    logger.error("[ai-search DELETE error]", e)
     return NextResponse.json({ ok: false, message: e.message || "删除失败，请重试" }, { status: 500 })
   }
 }
@@ -416,7 +437,7 @@ export async function PATCH(req: NextRequest) {
     await db.collection("ai_search_leads").where({ id }).update({ email_sent: true, email_sent_at: nowIso() })
     return NextResponse.json({ ok: true, message: "邮件已发送" })
   } catch (e: any) {
-    console.error("[ai-search PATCH error]", e)
+    logger.error("[ai-search PATCH error]", e)
     return NextResponse.json({ ok: false, message: e.message || "发送失败，请重试" }, { status: 500 })
   }
 }

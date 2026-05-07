@@ -2,9 +2,10 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useState } from "react"
 import { adminLogoutAction } from "@/actions/admin-auth"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Users, CreditCard, Settings, LogOut, User, Image, Link as LinkIcon, Package, FolderOpen, Sparkles, AlertTriangle, ChevronDown, Video } from "lucide-react"
+import { LayoutDashboard, Users, CreditCard, Settings, LogOut, User, Image, Link as LinkIcon, Package, FolderOpen, Sparkles, AlertTriangle, ChevronDown, Video, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
@@ -29,10 +30,32 @@ const navItems = [
 
 export default function AdminSidebar({ username, role }: { username: string; role: string }) {
   const pathname = usePathname()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
-      <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-        <Link href="/admin/dashboard" className="flex items-center gap-2">
+    <>
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg"
+      >
+        {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+      </button>
+
+      {mobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      <aside className={cn(
+        "fixed left-0 top-0 h-full bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-transform duration-300 z-45",
+        "w-64",
+        "lg:translate-x-0 lg:z-40",
+        mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+        <Link href="/admin/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
           <LayoutDashboard className="h-6 w-6 text-primary" />
           <span className="text-xl font-bold">管理后台</span>
         </Link>
@@ -55,7 +78,7 @@ export default function AdminSidebar({ username, role }: { username: string; rol
                 </div>
                 <div className="pl-12 space-y-1">
                   {item.children.map((child) => (
-                    <Link key={child.href} href={child.href} className={cn(
+                    <Link key={child.href} href={child.href} onClick={() => setMobileMenuOpen(false)} className={cn(
                       "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors",
                       pathname.startsWith(child.href)
                         ? "bg-primary/10 text-primary font-medium"
@@ -70,7 +93,7 @@ export default function AdminSidebar({ username, role }: { username: string; rol
             )
           }
           return (
-            <Link key={item.href} href={item.href} className={cn(
+            <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)} className={cn(
               "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
               pathname.startsWith(item.href)
                 ? "bg-primary/10 text-primary font-medium"
@@ -97,5 +120,6 @@ export default function AdminSidebar({ username, role }: { username: string; rol
         </form>
       </div>
     </aside>
+    </>
   )
 }

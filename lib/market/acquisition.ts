@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto"
 import { dbAdapter } from "./db-adapter"
+import { logger } from '../logger'
 import type {
   AcquisitionBlogger,
   AcquisitionB2BLead,
@@ -638,7 +639,7 @@ export async function insertBlogger(userId: string, data: {
     commission: data.commission,
     cost: data.cost,
   }
-  console.log('[insertBlogger] inserting to', BLOGGERS_TABLE, 'row:', JSON.stringify(row))
+  logger.debug(`[insertBlogger] inserting to ${BLOGGERS_TABLE}, id: ${row.id}, name: ${row.name}`)
   const result = await dbAdapter.insertRow(BLOGGERS_TABLE, row)
   return mapBloggerRow(result)
 }

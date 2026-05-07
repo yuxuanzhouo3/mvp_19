@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useStreamText } from "@/hooks/useStreamText"
+import { logger } from "@/lib/logger"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,6 +32,8 @@ function stripSingleOuterFence(s: string): string {
   return m ? m[1].trim() : s
 }
 
+const MAX_MESSAGES = 50
+
 export default function AICoderPage() {
   const [mode, setMode] = useState<Mode>("chat")
   const [language, setLanguage] = useState("TypeScript")
@@ -53,6 +56,19 @@ export default function AICoderPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const streamingMsgIdRef = useRef<string | null>(null)
   const { start, isStreaming, error, stop } = useStreamText()
+
+  const cleanupMessages = useCallback(() => {
+    logger.debug("[AI-Coder] Cleaning up messages on page unmount")
+    setMessages([])
+    streamingMsgIdRef.current = null
+    stop()
+  }, [stop])
+
+  useEffect(() => {
+    return () => {
+      cleanupMessages()
+    }
+  }, [cleanupMessages])
 
   // 自动滚动到底部
   useEffect(() => {
@@ -91,7 +107,7 @@ export default function AICoderPage() {
       setIsLoginPromptOpen(true)
       return
     }
-    console.log(`[AI-Coder] handleSend called, input: "${input}", trimmed: "${input.trim()}", loading: ${loading}`)
+    logger.debug(`[AI-Coder] handleSend called, input length: ${input.length}, loading: ${loading}`)
     if (!input.trim() || loading) return
 
     const userInput = input.trim()
@@ -107,7 +123,13 @@ export default function AICoderPage() {
       timestamp: new Date(),
     }
 
-    setMessages(prev => [...prev, userMessage])
+    setMessages(prev => {
+      const updated = [...prev, userMessage]
+      if (updated.length > MAX_MESSAGES) {
+        return updated.slice(-MAX_MESSAGES)
+      }
+      return updated
+    })
     setLoading(true)
 
     // 准备请求数据

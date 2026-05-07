@@ -3,6 +3,7 @@ import { dbAdapter } from "./db-adapter"
 import type { BloggerCollectTask, BloggerCollectTemp } from "./acquisition-types"
 import axios from "axios"
 import * as cheerio from "cheerio"
+import { logger } from '../logger'
 
 // 爬虫配置
 const CRAWLER_CONFIG = {
@@ -25,15 +26,42 @@ const CRAWLER_CONFIG = {
 // 邮箱正则表达式
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
 
-// 任务状态管理
-const runningTasks = new Map<string, boolean>()
+// 任务状态管理，带时间戳便于清理
+type TaskMeta = {
+  status: boolean
+  createdAt: number
+}
+const runningTasks = new Map<string, TaskMeta>()
 
 // 并发任务控制
 const taskQueue: string[] = []
 let activeTasks = 0
 
-// 错误计数
-const errorCounts = new Map<string, number>()
+// 错误计数，带时间戳
+type ErrorMeta = {
+  count: number
+  createdAt: number
+}
+const errorCounts = new Map<string, ErrorMeta>()
+
+// 定期清理长时间挂起的任务，防止内存泄漏
+setInterval(() => {
+  const now = Date.now()
+  const MAX_AGE = 24 * 60 * 60 * 1000 // 24小时
+  let cleared = 0
+  
+  for (const [taskId, meta] of runningTasks.entries()) {
+    if (now - meta.createdAt > MAX_AGE) {
+      runningTasks.delete(taskId)
+      errorCounts.delete(taskId)
+      cleared++
+    }
+  }
+  
+  if (cleared > 0) {
+    logger.debug(`[Crawler] Cleared ${cleared} stale tasks`)
+  }
+}, 60 * 60 * 1000) // 每小时清理一次
 
 // 内存监控
 function checkMemoryUsage(): boolean {
@@ -473,9 +501,9 @@ export async function crawlBloggers(task: BloggerCollectTask): Promise<void> {
   }
   
   // 标记任务为运行中
-  runningTasks.set(id, true)
+  runningTasks.set(id, { status: true, createdAt: Date.now() })
   activeTasks++
-  errorCounts.set(id, 0)
+  errorCounts.set(id, { count: 0, createdAt: Date.now() })
   
   try {
     // 更新任务状态为运行中
@@ -549,8 +577,9 @@ export async function crawlBloggers(task: BloggerCollectTask): Promise<void> {
     let totalCollected = 0
     for (const blogger of bloggers) {
       // 检查任务是否被暂停或停止
-      if (!runningTasks.get(id)) {
-        console.log(`[Crawler] Task ${id} has been paused or stopped`)
+      const taskMeta = runningTasks.get(id)
+      if (!taskMeta || !taskMeta.status) {
+        logger.debug(`[Crawler] Task ${id} has been paused or stopped`)
         break
       }
       
@@ -565,11 +594,12 @@ export async function crawlBloggers(task: BloggerCollectTask): Promise<void> {
       }
       
       // 检查错误计数
-      const errorCount = errorCounts.get(id) || 0
+      const errorMeta = errorCounts.get(id)
+      const errorCount = errorMeta?.count || 0
       if (errorCount >= CRAWLER_CONFIG.errorThreshold) {
-        console.warn(`[Crawler] Task ${id} paused due to high error rate`)
+        logger.warn(`[Crawler] Task ${id} paused due to high error rate`)
         await adaptiveDelay(10000) // 错误率高时延长延时
-        errorCounts.set(id, 0) // 重置错误计数
+        errorCounts.set(id, { count: 0, createdAt: Date.now() }) // 重置错误计数
       }
       
       try {
@@ -612,9 +642,10 @@ export async function crawlBloggers(task: BloggerCollectTask): Promise<void> {
         // 自适应延时
         await adaptiveDelay()
       } catch (error) {
-        console.error(`[Crawler] Error processing blogger data:`, error)
+        logger.error(`[Crawler] Error processing blogger data:`, error)
         // 增加错误计数
-        errorCounts.set(id, errorCount + 1)
+        const currentMeta = errorCounts.get(id) || { count: 0, createdAt: Date.now() }
+        errorCounts.set(id, { count: currentMeta.count + 1, createdAt: Date.now() })
         // 错误时延长延时
         await adaptiveDelay(3000)
       }
@@ -627,9 +658,9 @@ export async function crawlBloggers(task: BloggerCollectTask): Promise<void> {
       updatedAt: new Date().toISOString()
     })
     
-    console.log(`[Crawler] Task ${id} completed. Collected ${totalCollected} bloggers`)
+    logger.debug(`[Crawler] Task ${id} completed. Collected ${totalCollected} bloggers`)
   } catch (error) {
-    console.error(`[Crawler] Task ${id} failed:`, error)
+    logger.error(`[Crawler] Task ${id} failed:`, error)
     
     // 更新任务状态为失败
     await dbAdapter.updateRow("blogger_collect_tasks", { id }, {
@@ -655,17 +686,22 @@ export async function crawlBloggers(task: BloggerCollectTask): Promise<void> {
 
 // 暂停爬虫任务
 export function pauseCrawlerTask(taskId: string): void {
-  runningTasks.set(taskId, false)
-  console.log(`[Crawler] Task ${taskId} paused`)
+  const existing = runningTasks.get(taskId)
+  if (existing) {
+    runningTasks.set(taskId, { ...existing, status: false })
+  }
+  logger.debug(`[Crawler] Task ${taskId} paused`)
 }
 
 // 停止爬虫任务
 export function stopCrawlerTask(taskId: string): void {
   runningTasks.delete(taskId)
-  console.log(`[Crawler] Task ${taskId} stopped`)
+  errorCounts.delete(taskId)
+  logger.debug(`[Crawler] Task ${taskId} stopped`)
 }
 
 // 检查任务是否在运行
 export function isTaskRunning(taskId: string): boolean {
-  return runningTasks.has(taskId)
+  const meta = runningTasks.get(taskId)
+  return meta?.status === true
 }

@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js"
 import * as cloudbase from "@cloudbase/node-sdk"
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../pagination'
+import { logger, safeLog } from '../logger'
 
 // Node.js 模块只在服务端使用，动态导入避免客户端打包报错
 let readFile: any, writeFile: any, mkdir: any, nodePath: any
@@ -71,7 +73,7 @@ function getCloudBase() {
   const secretKey = process.env.CLOUDBASE_SECRET_KEY || ""
   
   try {
-    console.log(`[Database] 强制连接腾讯云环境: ${envId}`)
+    logger.info(`[Database] 强制连接腾讯云环境: ${envId}`)
     const app = cloudbase.init({
       env: envId,
       secretId,
@@ -80,7 +82,7 @@ function getCloudBase() {
     cloudbaseInstance = app.database()
     return cloudbaseInstance
   } catch (error) {
-    console.error("[Database] CloudBase 强制连接失败:", error)
+    logger.error("[Database] CloudBase 强制连接失败", error)
     return null
   }
 }
@@ -120,30 +122,34 @@ async function writeLocalRows(table: string, rows: RawRow[]) {
 // Unified Adapter
 // ==========================================
 export const dbAdapter = {
-  async loadRows(table: string, filters: RawRow = {}): Promise<RawRow[]> {
+  async loadRows(table: string, filters: RawRow = {}, options: { pageSize?: number; offset?: number } = {}): Promise<RawRow[]> {
+    const pageSize = Math.min(options.pageSize || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE)
+    const offset = options.offset || 0
+
     const REGION = getRegion()
-    console.log(`[dbAdapter.loadRows] 开始查询表 ${table}，区域: ${REGION}，过滤条件: ${JSON.stringify(filters)}`)
+    logger.debug(`[dbAdapter.loadRows] 开始查询表 ${table}，区域: ${REGION}，分页: offset=${offset}, pageSize=${pageSize}`)
+
     // 1. Try Supabase if in INTL region
     if (REGION === "INTL") {
       const supabase = getSupabase()
       if (supabase) {
-        console.log(`[dbAdapter.loadRows] 使用 Supabase 查询表 ${table}`)
+        logger.debug(`[dbAdapter.loadRows] 使用 Supabase 查询表 ${table}`)
         try {
-          let query = supabase.from(table).select("*").order("created_at", { ascending: false })
+          let query = supabase.from(table).select("*").order("created_at", { ascending: false }).range(offset, offset + pageSize - 1)
           const normalizedFilters = normalizeKeys(filters)
           for (const [k, v] of Object.entries(normalizedFilters)) query = query.eq(k, v)
           const { data, error } = await query
           if (error) {
-            console.error(`[dbAdapter.loadRows] Supabase 查询错误:`, error)
+            logger.error(`[dbAdapter.loadRows] Supabase 查询错误`, error)
           } else if (data) {
-            console.log(`[dbAdapter.loadRows] Supabase 查询成功，返回 ${data.length} 条数据`)
+            logger.debug(`[dbAdapter.loadRows] Supabase 查询成功，返回 ${data.length} 条数据`)
             return data
           }
         } catch (error) {
-          console.error(`[dbAdapter.loadRows] Supabase 查询异常:`, error)
+          logger.error(`[dbAdapter.loadRows] Supabase 查询异常`, error)
         }
       } else {
-        console.log(`[dbAdapter.loadRows] Supabase 客户端未初始化`)
+        logger.debug(`[dbAdapter.loadRows] Supabase 客户端未初始化`)
       }
     }
 
@@ -151,26 +157,26 @@ export const dbAdapter = {
     if (REGION === "CN") {
       const db = getCloudBase()
       if (db) {
-        console.log(`[dbAdapter.loadRows] 使用 CloudBase 查询表 ${table}`)
+        logger.debug(`[dbAdapter.loadRows] 使用 CloudBase 查询表 ${table}`)
         try {
-          const res = await db.collection(table).where(filters).get()
+          const res = await db.collection(table).where(filters).limit(pageSize).skip(offset).get()
           if (Array.isArray(res.data)) {
-            console.log(`[dbAdapter.loadRows] CloudBase 查询成功，返回 ${res.data.length} 条数据`)
+            logger.debug(`[dbAdapter.loadRows] CloudBase 查询成功，返回 ${res.data.length} 条数据`)
             return res.data
           }
         } catch (err) {
-          console.error(`[dbAdapter.loadRows] CloudBase 查询错误:`, err)
+          logger.error(`[dbAdapter.loadRows] CloudBase 查询错误`, err)
         }
       } else {
-        console.log(`[dbAdapter.loadRows] CloudBase 客户端未初始化`)
+        logger.debug(`[dbAdapter.loadRows] CloudBase 客户端未初始化`)
       }
     }
 
     // 3. Fallback to Local File
-    console.log(`[dbAdapter.loadRows] 回退到本地文件查询表 ${table}`)
+    logger.debug(`[dbAdapter.loadRows] 回退到本地文件查询表 ${table}`)
     const rows = await readLocalRows(table)
     const filteredRows = rows.filter(r => Object.entries(filters).every(([k, v]) => r[k] === v))
-    console.log(`[dbAdapter.loadRows] 本地文件查询成功，返回 ${filteredRows.length} 条数据`)
+    logger.debug(`[dbAdapter.loadRows] 本地文件查询成功，返回 ${filteredRows.length} 条数据`)
     return filteredRows
   },
 
@@ -183,7 +189,7 @@ export const dbAdapter = {
       const supabase = getSupabase()
       if (supabase) {
         const { data, error } = await supabase.from(table).insert(normalizeKeys(finalRow)).select("*").maybeSingle()
-        if (error) console.error(`[Supabase] insertRow ${table}:`, error.message)
+        if (error) logger.error(`[Supabase] insertRow ${table}`, error.message)
         else return data ?? finalRow
       }
     }
@@ -206,10 +212,10 @@ export const dbAdapter = {
               await db.collection(table).add(finalRow)
               return finalRow
             } catch (createErr) {
-              console.error(`CloudBase createCollection error for ${table}:`, createErr)
+              logger.error(`CloudBase createCollection error for ${table}`, createErr)
             }
           } else {
-            console.error(`CloudBase insertRow error for ${table}:`, err)
+            logger.error(`CloudBase insertRow error for ${table}`, err)
           }
         }
       }
@@ -249,7 +255,7 @@ export const dbAdapter = {
             return { ...res.data[0], ...finalPatch }
           }
         } catch (err) {
-          console.error(`CloudBase updateRow error for ${table}:`, err)
+          logger.error(`CloudBase updateRow error for ${table}`, err)
         }
       }
     }
@@ -284,7 +290,7 @@ export const dbAdapter = {
           const res = await collection.where(filters).remove()
           return res.deleted > 0
         } catch (err) {
-          console.error(`CloudBase deleteRow error for ${table}:`, err)
+          logger.error(`CloudBase deleteRow error for ${table}`, err)
         }
       }
     }

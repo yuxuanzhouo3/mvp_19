@@ -1,3 +1,5 @@
+import { logger } from '../logger'
+
 // Simple pricing table (CNY). Adjust as needed.
 export type Pricing = {
   [provider: string]: {
@@ -48,10 +50,10 @@ export function providersFor(region: Region): string[] {
   if (regionSpecificProvider) {
     const validProviders = ["aliyun", "openai", "openrouter"]
     if (validProviders.includes(regionSpecificProvider)) {
-      console.log(`[AI-Pricing] Using region-specific provider from ${regionSpecificKey}: ${regionSpecificProvider}`)
+      logger.debug(`[AI-Pricing] Using region-specific provider from ${regionSpecificKey}: ${regionSpecificProvider}`)
       return [regionSpecificProvider]
     } else {
-      console.log(`[AI-Pricing] Invalid ${regionSpecificKey} value: ${regionSpecificProvider}, falling back to default routing`)
+      logger.warn(`[AI-Pricing] Invalid ${regionSpecificKey} value: ${regionSpecificProvider}, falling back to default routing`)
     }
   }
 
@@ -60,10 +62,10 @@ export function providersFor(region: Region): string[] {
   if (globalProvider) {
     const validProviders = ["aliyun", "openai", "openrouter"]
     if (validProviders.includes(globalProvider)) {
-      console.log(`[AI-Pricing] Using global provider from AI_PROVIDER env: ${globalProvider}`)
+      logger.debug(`[AI-Pricing] Using global provider from AI_PROVIDER env: ${globalProvider}`)
       return [globalProvider]
     } else {
-      console.log(`[AI-Pricing] Invalid AI_PROVIDER value: ${globalProvider}, falling back to default routing`)
+      logger.warn(`[AI-Pricing] Invalid AI_PROVIDER value: ${globalProvider}, falling back to default routing`)
     }
   }
 

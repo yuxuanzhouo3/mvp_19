@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 // 内存存储验证码（生产环境应用 Redis）
 import { codeStore } from "@/lib/sms-store"
+import { logger } from "@/lib/logger"
 
 async function getSupabase() {
   const { createClient } = await import("@supabase/supabase-js")
@@ -50,21 +51,21 @@ export async function POST(req: NextRequest) {
         body: bodyStr,
       })
       const data = await res.json()
-      console.log("[SMS response]", JSON.stringify(data, null, 2))
+      logger.debug("[SMS response]", { code: data?.Response?.SendStatusSet?.[0]?.Code })
       const result = data?.Response
       if (result?.Error) {
-        console.error("[SMS error]", result.Error.Code, result.Error.Message)
+        logger.error("[SMS error]", { code: result.Error.Code, message: result.Error.Message })
       } else {
         const sendStatus = result?.SendStatusSet?.[0]
-        console.log("[SMS status]", sendStatus?.Code, sendStatus?.Message)
+        logger.debug("[SMS status]", { code: sendStatus?.Code, message: sendStatus?.Message })
       }
     } catch (e) {
-      console.error("[SMS send error]", e)
+      logger.error("[SMS send error]", e)
       // 发送失败不影响开发调试，继续返回成功（开发环境）
     }
   } else {
     // 开发环境：打印验证码到控制台
-    console.log(`[SMS DEV] 手机号 ${phone} 验证码: ${code}`)
+    logger.debug(`[SMS DEV] 手机号 ${phone} 验证码: ${code}`)
   }
 
   return NextResponse.json({ ok: true, message: "验证码已发送，5分钟内有效" })

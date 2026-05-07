@@ -4,11 +4,12 @@ import { callRoutedAI } from "@/lib/ai/router"
 import { recentContextText } from "@/lib/memory/store"
 import { streamResponse, streamAsyncCharacters } from "@/lib/http/stream"
 import type { AIRequest } from "@/lib/ai/types"
+import { logger } from "@/lib/logger"
 
 type Mode = "complete" | "refactor" | "explain" | "chat"
 
 export async function POST(req: Request) {
-  console.log(`[AI-Coder] API request received`)
+  logger.debug(`[AI-Coder] API request received`)
   const body = (await req.json()) as {
     mode: Mode
     code?: string
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
   const prompt = body.prompt ?? ""
   const language = body.language ?? "TypeScript"
 
-  console.log(`[AI-Coder] Mode: ${mode}, Language: ${language}, Code length: ${code.length}, Prompt: "${prompt.substring(0, 50)}${prompt.length > 50 ? '...' : ''}"`)
+  logger.debug(`[AI-Coder] Mode: ${mode}, Language: ${language}, Code length: ${code.length}, Prompt length: ${prompt.length}`)
   const url = new URL(req.url)
   const streamParam = url.searchParams.get("stream")
   const streamHeader = new Headers(req.headers).get("x-stream")
@@ -32,28 +33,26 @@ export async function POST(req: Request) {
   const cacheKey = makeCacheKey({ mode, code, prompt, language })
   const cached = getCache(cacheKey)
   if (cached) {
-    console.log(`[AI-Coder] Cache hit for key: ${cacheKey}`)
+    logger.debug(`[AI-Coder] Cache hit for key: ${cacheKey}`)
     if (wantStream) return streamResponse(cached.result, { delayMs: 8, contentType: useSse ? "sse" : "text" })
     return NextResponse.json({ ok: true, provider: "cache", result: cached.result })
   }
-  console.log(`[AI-Coder] Cache miss, key: ${cacheKey}`)
+  logger.debug(`[AI-Coder] Cache miss, key: ${cacheKey}`)
 
   // Region 判定（前端 NEXT_PUBLIC_SITE_REGION 或请求头）
   const regionHeader = new Headers(req.headers).get("x-region") || process.env.NEXT_PUBLIC_SITE_REGION || "cn"
   const region = regionHeader === "intl" ? "intl" : "cn"
-  console.log(`[AI-Coder] Region: ${region}, Header: ${regionHeader}, NEXT_PUBLIC_SITE_REGION: ${process.env.NEXT_PUBLIC_SITE_REGION}`)
+  logger.debug(`[AI-Coder] Region: ${region}`)
 
   // 检查是否有可用的API密钥
   const hasAliyunKey = !!process.env.ALIYUN_DASHSCOPE_API_KEY
   const hasOpenAIKey = !!process.env.OPENAI_API_KEY
   const hasOpenRouterKey = !!process.env.OPENROUTER_API_KEY
-  console.log(
-    `[AI-Coder] API keys - Aliyun: ${hasAliyunKey ? "PRESENT" : "MISSING"}, OpenAI: ${hasOpenAIKey ? "PRESENT" : "MISSING"}, OpenRouter: ${hasOpenRouterKey ? "PRESENT" : "MISSING"}`,
-  )
+  logger.debug(`[AI-Coder] API keys - Aliyun: ${hasAliyunKey}, OpenAI: ${hasOpenAIKey}, OpenRouter: ${hasOpenRouterKey}`)
 
   // 如果没有配置任何API密钥，返回模拟结果
   if (!hasAliyunKey && !hasOpenAIKey && !hasOpenRouterKey) {
-    console.log(`[AI-Coder] No API keys configured, returning mock result`)
+    logger.debug(`[AI-Coder] No API keys configured, returning mock result`)
     const mockResult = getMockResult(mode, { code, prompt, language })
     setCache(cacheKey, mockResult)
     return NextResponse.json({ ok: true, provider: "mock", result: mockResult })
@@ -70,7 +69,7 @@ export async function POST(req: Request) {
     const input = projectContext + buildUserPrompt(mode, { code, prompt, language, naturalLang })
     const model = pickModel(mode, region)
     const system = getSystemPrompt(mode, language, naturalLang)
-    console.log(`[AI-Coder] Model selected: ${model}, Region: ${region}`)
+    logger.debug(`[AI-Coder] Model selected: ${model}`)
     const maxTokens = maxTokensForMode(mode)
     const aiReq: AIRequest & { region: "cn" | "intl" } = {
       model,
@@ -82,13 +81,13 @@ export async function POST(req: Request) {
       projectId,
       region,
     }
-    console.log(`[AI-Coder] Calling routed AI with input length: ${input.length}, region: ${region}`)
+    logger.debug(`[AI-Coder] Calling routed AI with input length: ${input.length}`)
     if (wantStream) {
       // 打开连接，等待结果后逐字输出
       return streamAsyncCharacters(
         async () => {
           const res = await callRoutedAI(aiReq)
-          console.log(`[AI-Coder] AI response received from provider: ${res.provider}, text length: ${res.text.length}`)
+          logger.debug(`[AI-Coder] AI response received from provider: ${res.provider}, text length: ${res.text.length}`)
           const result = res.text
           setCache(cacheKey, result)
           return result
@@ -97,13 +96,13 @@ export async function POST(req: Request) {
       )
     }
     const res = await callRoutedAI(aiReq)
-    console.log(`[AI-Coder] AI response received from provider: ${res.provider}, text length: ${res.text.length}`)
+    logger.debug(`[AI-Coder] AI response received from provider: ${res.provider}, text length: ${res.text.length}`)
     const result = res.text
     setCache(cacheKey, result)
     return NextResponse.json({ ok: true, provider: res.provider, result })
   } catch (err) {
     // 密钥已配置但上游仍失败：网络、额度、模型不可用、某家全挂等——与「未配置密钥」不同，勿用同一套提示误导用户
-    console.error(`[AI-Coder] Error calling AI API:`, err)
+    logger.error(`[AI-Coder] Error calling AI API`, err)
     const errMsg = err instanceof Error ? err.message : String(err)
     const mockResult = formatFallbackAfterApiError(errMsg, getMockResult(mode, { code, prompt, language }))
     setCache(cacheKey, mockResult)
@@ -183,14 +182,14 @@ function pickModel(mode: Mode, region: string) {
   const regionSpecificModel = process.env[regionSpecificKey]
 
   if (regionSpecificModel) {
-    console.log(`[AI-Coder] Using region-specific model from ${regionSpecificKey}: ${regionSpecificModel}`)
+    logger.debug(`[AI-Coder] Using region-specific model from ${regionSpecificKey}: ${regionSpecificModel}`)
     return regionSpecificModel
   }
 
   // Fallback to global DEFAULT_MODEL if no region-specific setting
   const globalModel = process.env.DEFAULT_MODEL
   if (globalModel) {
-    console.log(`[AI-Coder] Using global model from DEFAULT_MODEL env: ${globalModel}`)
+    logger.debug(`[AI-Coder] Using global model from DEFAULT_MODEL env: ${globalModel}`)
     return globalModel
   }
 

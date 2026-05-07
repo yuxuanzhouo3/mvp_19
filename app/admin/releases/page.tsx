@@ -426,8 +426,8 @@ export default function ReleasesPage() {
 
       {/* 创建对话框 - 简化版 */}
       {showCreateDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-mobile-bottom">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>新建发布版本</CardTitle>
             </CardHeader>
@@ -587,8 +587,8 @@ export default function ReleasesPage() {
 
       {/* 编辑对话框 */}
       {showEditDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-mobile-bottom">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>编辑发布版本</CardTitle>
             </CardHeader>
@@ -710,8 +710,8 @@ export default function ReleasesPage() {
 
       {/* 删除对话框 */}
       {showDeleteDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-mobile-bottom">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>确认删除</CardTitle>
             </CardHeader>

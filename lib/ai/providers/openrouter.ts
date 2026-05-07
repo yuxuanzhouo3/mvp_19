@@ -1,5 +1,8 @@
 import type { AIRequest, AIResponse } from "../types"
 import { priceOf } from "../pricing"
+import { fetchWithTimeout, FetchTimeoutError } from "../../fetch-timeout"
+
+const AI_TIMEOUT_MS = 60000 // AI 调用超时 60 秒
 
 /** 内部 model 名 → OpenRouter 模型 ID（见 https://openrouter.ai/models） */
 function toOpenRouterModelId(internal: string): string {
@@ -30,21 +33,33 @@ export async function callOpenRouter(req: AIRequest): Promise<AIResponse> {
   const model = toOpenRouterModelId(internalModel)
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
-  const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": siteUrl,
-      "X-Title": "mvp-ai-coder",
-    },
-    body: JSON.stringify({
-      model,
-      temperature: req.temperature ?? 0.2,
-      max_tokens: req.maxTokens ?? 400,
-      messages,
-    }),
-  })
+  let resp: Response
+  try {
+    resp = await fetchWithTimeout(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          "HTTP-Referer": siteUrl,
+          "X-Title": "mvp-ai-coder",
+        },
+        body: JSON.stringify({
+          model,
+          temperature: req.temperature ?? 0.2,
+          max_tokens: req.maxTokens ?? 400,
+          messages,
+        }),
+      },
+      AI_TIMEOUT_MS
+    )
+  } catch (err) {
+    if (err instanceof FetchTimeoutError) {
+      throw new Error("OpenRouter 请求超时，请稍后重试")
+    }
+    throw err
+  }
 
   if (!resp.ok) {
     throw new Error(await resp.text())
